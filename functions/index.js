@@ -64,24 +64,28 @@ async function fetchNews() {
 /**
  * Firestore에 뉴스 데이터 저장
  */
-async function saveToFirestore(headlines) {
+async function saveToFirestore(headlines, snapshot) {
   const db = admin.firestore();
   const batch = db.batch();
 
   const newsRef = db.collection('news').doc('latest');
-  batch.set(newsRef, {
-    updatedAtISO: new Date().toISOString(),
-    headlines: headlines,
-    snapshot: [
-      { name:"KOSPI", value: 2580.45, change: +22.35, changePct: +0.87 },
-      { name:"KOSDAQ", value: 745.82, change: -3.15, changePct: -0.42 },
-      { name:"원/달러", value: 1345.20, change: -5.80, changePct: -0.43 },
-      { name:"한은 기준금리", value: 2.50, change: 0, changePct: 0 },
-    ]
-  }, { merge: true });
+  const payload = {
+    updatedAtISO: new Date().toISOString()
+  };
+
+  if (Array.isArray(headlines)) {
+    payload.headlines = headlines;
+  }
+
+  if (Array.isArray(snapshot)) {
+    payload.snapshot = snapshot;
+  }
+
+  batch.set(newsRef, payload, { merge: true });
 
   await batch.commit();
-  console.log(`Saved ${headlines.length} headlines to Firestore`);
+  const count = Array.isArray(headlines) ? headlines.length : 0;
+  console.log(`Saved ${count} headlines to Firestore`);
 }
 
 /**
@@ -98,7 +102,7 @@ exports.updateMorningNews = onSchedule({
 
   try {
     const headlines = await fetchNews();
-    await saveToFirestore(headlines);
+    await saveToFirestore(headlines, null);
     console.log("Morning news update completed successfully");
     return { success: true, count: headlines.length };
   } catch (error) {
@@ -121,7 +125,7 @@ exports.updateEveningNews = onSchedule({
 
   try {
     const headlines = await fetchNews();
-    await saveToFirestore(headlines);
+    await saveToFirestore(headlines, null);
     console.log("Evening news update completed successfully");
     return { success: true, count: headlines.length };
   } catch (error) {
@@ -144,7 +148,7 @@ exports.manualUpdateNews = onRequest({
 
   try {
     const headlines = await fetchNews();
-    await saveToFirestore(headlines);
+    await saveToFirestore(headlines, null);
 
     res.json({
       success: true,
@@ -186,6 +190,180 @@ exports.getLatestNews = onRequest({
     });
   } catch (error) {
     console.error("Error fetching news:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+const STOOQ_BASE = "https://stooq.com/q/d/l/";
+const STOOQ_INDICES = [
+  { name: "KOSPI", symbols: ["^KOSPI", "^KS11"] },
+  { name: "KOSDAQ", symbols: ["^KOSDAQ", "^KQ11"] },
+  { name: "NASDAQ", symbols: ["^NDQ", "^IXIC"] },
+  { name: "S&P 500", symbols: ["^SPX", "^GSPC"] },
+  { name: "Dow Jones", symbols: ["^DJI", "^DJIA"] },
+  { name: "VIX", symbols: ["^VIX"] },
+  { name: "원/달러", symbols: ["USDKRW"] }
+];
+
+function parseStooqCsv(csvText) {
+  const lines = String(csvText).trim().split(/\r?\n/);
+  if (lines.length < 2) {
+    throw new Error("Stooq CSV has no data rows");
+  }
+
+  const rows = lines.slice(1)
+    .map((line) => line.split(","))
+    .filter((cols) => cols.length >= 5 && cols[0] && cols[4]);
+
+  rows.sort((a, b) => new Date(a[0]) - new Date(b[0]));
+  return rows;
+}
+
+async function fetchStooqDaily(symbol) {
+  const url = `${STOOQ_BASE}?s=${encodeURIComponent(symbol)}&i=d`;
+  const response = await axios.get(url, {
+    timeout: 10000,
+    responseType: "text",
+    headers: { "User-Agent": "miso_daily/1.0" }
+  });
+
+  const rows = parseStooqCsv(response.data);
+  const last = rows[rows.length - 1];
+  const prev = rows.length > 1 ? rows[rows.length - 2] : null;
+
+  const lastDate = last[0];
+  const lastClose = Number(last[4]);
+  const prevClose = prev ? Number(prev[4]) : lastClose;
+
+  const change = lastClose - prevClose;
+  const changePct = prevClose ? (change / prevClose) * 100 : 0;
+
+  return {
+    date: lastDate,
+    value: lastClose,
+    change,
+    changePct
+  };
+}
+
+async function fetchStooqDailyWithFallback(symbols) {
+  const errors = [];
+  for (const symbol of symbols) {
+    try {
+      const data = await fetchStooqDaily(symbol);
+      return { symbol, data };
+    } catch (error) {
+      errors.push(`${symbol}: ${error.message}`);
+    }
+  }
+  throw new Error(`Stooq fetch failed for all symbols (${errors.join("; ")})`);
+}
+
+async function fetchSnapshotFromStooq() {
+  const snapshot = [];
+  for (const item of STOOQ_INDICES) {
+    try {
+      const result = await fetchStooqDailyWithFallback(item.symbols);
+      const data = result.data;
+      snapshot.push({
+        name: item.name,
+        symbol: result.symbol,
+        asOf: data.date,
+        value: data.value,
+        change: data.change,
+        changePct: data.changePct
+      });
+    } catch (error) {
+      console.error(`Stooq fetch failed for ${item.name}:`, error.message);
+    }
+  }
+  return snapshot;
+}
+
+async function getCurrentSnapshotMeta() {
+  const db = admin.firestore();
+  const doc = await db.collection('news').doc('latest').get();
+  if (!doc.exists) return {};
+  const data = doc.data();
+  const map = {};
+  if (Array.isArray(data.snapshot)) {
+    data.snapshot.forEach((item) => {
+      if (item && item.name && item.asOf) {
+        map[item.name] = item.asOf;
+      }
+    });
+  }
+  return map;
+}
+
+function isSnapshotUpdated(existingMeta, nextSnapshot) {
+  if (nextSnapshot.length !== STOOQ_INDICES.length) return false;
+  for (const item of nextSnapshot) {
+    if (!existingMeta[item.name] || existingMeta[item.name] !== item.asOf) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * 전일 종가 기준 지수 업데이트 (5분마다 확인)
+ */
+exports.updateDailySnapshot = onSchedule({
+  schedule: "*/5 * * * *",
+  timeZone: "Asia/Seoul",
+  memory: "256MiB",
+  timeoutSeconds: 120
+}, async () => {
+  console.log("Daily snapshot update started at", new Date().toISOString());
+
+  try {
+    const snapshot = await fetchSnapshotFromStooq();
+    if (snapshot.length !== STOOQ_INDICES.length) {
+      throw new Error("Incomplete snapshot data collected from Stooq");
+    }
+
+    const existingMeta = await getCurrentSnapshotMeta();
+    if (!isSnapshotUpdated(existingMeta, snapshot)) {
+      console.log("No new snapshot data. Skipping Firestore update.");
+      return { success: true, count: snapshot.length, updated: false };
+    }
+
+    await saveToFirestore(null, snapshot);
+    console.log("Daily snapshot update completed");
+    return { success: true, count: snapshot.length, updated: true };
+  } catch (error) {
+    console.error("Daily snapshot update failed:", error);
+    throw error;
+  }
+});
+
+/**
+ * 수동 지수 업데이트용 HTTP 엔드포인트
+ */
+exports.manualUpdateSnapshot = onRequest({
+  cors: true,
+  memory: "256MiB",
+  timeoutSeconds: 120
+}, async (req, res) => {
+  try {
+    const snapshot = await fetchSnapshotFromStooq();
+    if (snapshot.length !== STOOQ_INDICES.length) {
+      res.status(500).json({ success: false, error: "Incomplete snapshot data collected" });
+      return;
+    }
+
+    await saveToFirestore(null, snapshot);
+    res.json({
+      success: true,
+      count: snapshot.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Manual snapshot update failed:", error);
     res.status(500).json({
       success: false,
       error: error.message
