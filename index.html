@@ -1,14 +1,806 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>miso_daily | Stock Brief</title>
+  <meta name="description" content="miso_daily - 주식 소식을 깔끔하게 모아보는 데일리 브리핑" />
+
+  <style>
+    :root{
+      --bg:#0b0d12;
+      --panel:#121622;
+      --panel2:#0f1320;
+      --text:#e9edf6;
+      --muted:#a9b3c7;
+      --line:rgba(255,255,255,.08);
+
+      /* 진한 오렌지 포인트 */
+      --accent:#ff6a00;
+      --accent2:#ff8a3d;
+
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --max: 1120px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(255,106,0,.18), transparent 60%),
+        radial-gradient(900px 600px at 95% 10%, rgba(255,138,61,.10), transparent 55%),
+        linear-gradient(180deg, #07080c 0%, var(--bg) 40%, #07080c 100%);
+      letter-spacing:-0.2px;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+    .wrap{ max-width:var(--max); margin:0 auto; padding:28px 18px 60px; }
+
+    /* Topbar */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+      padding:14px 16px;
+      background:rgba(18,22,34,.66);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      position:sticky; top:14px; z-index:10;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      min-width: 230px;
+    }
+    .logo{
+      width:42px; height:42px; border-radius:14px;
+      background: linear-gradient(135deg, var(--accent) 0%, #ffb07a 45%, rgba(255,106,0,.18) 100%);
+      display:grid; place-items:center;
+      box-shadow: 0 10px 22px rgba(255,106,0,.20);
+      border:1px solid rgba(255,255,255,.16);
+    }
+    .logo svg{ filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+    .brand .title{
+      display:flex; flex-direction:column; line-height:1.05;
+    }
+    .brand .title strong{ font-size:16px; }
+    .brand .title span{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+    .actions{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .chip{
+      display:flex; gap:8px; align-items:center;
+      padding:10px 12px;
+      background: rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:999px;
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .chip b{ color:var(--text); font-weight:600; }
+    .btn{
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      font-weight:600;
+      transition:.15s transform, .15s background, .15s border;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(255,106,0,.95), rgba(255,138,61,.92));
+      border-color: rgba(255,255,255,.12);
+      color:#1a120b;
+      box-shadow: 0 10px 22px rgba(255,106,0,.22);
+    }
+    .btn.primary:hover{ transform: translateY(-1px); filter:saturate(1.05); }
+
+    /* Layout grid */
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:16px;
+      margin-top:16px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .brand{ min-width:auto; }
+    }
+
+    /* Panels */
+    .panel{
+      background: rgba(18,22,34,.72);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding:16px 16px 12px;
+      border-bottom:1px solid var(--line);
+      display:flex; justify-content:space-between; align-items:flex-end; gap:10px;
+    }
+    .panel .hd h2{
+      margin:0;
+      font-size:15px;
+      letter-spacing:-.2px;
+    }
+    .panel .hd .sub{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.25;
+    }
+    .panel .bd{ padding:16px; }
+
+    /* Market snapshot */
+    .snap{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+    }
+    @media (max-width: 780px){
+      .snap{ grid-template-columns: repeat(2, 1fr); }
+    }
+    .kpi{
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius: var(--radius2);
+      background: rgba(0,0,0,.18);
+    }
+    .kpi .name{ color:var(--muted); font-size:12px; display:flex; align-items:center; gap:8px; }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: rgba(255,255,255,.25);
+    }
+    .kpi .val{ margin-top:10px; font-size:18px; font-weight:750; letter-spacing:-.4px; }
+    .kpi .chg{ margin-top:6px; font-family:var(--mono); font-size:12px; color:var(--muted); }
+    .up{ color: #7CFFA8; }
+    .down{ color: #FF7C7C; }
+
+    /* Headlines */
+    .toolbar{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      margin-bottom:10px;
+    }
+    .search{
+      flex: 1 1 240px;
+      display:flex; align-items:center; gap:8px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+    }
+    .search input{
+      width:100%;
+      border:0; outline:0;
+      background:transparent;
+      color:var(--text);
+      font-size:13px;
+    }
+    .pill{
+      padding:8px 10px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size:12px;
+      cursor:pointer;
+      transition:.12s;
+      user-select:none;
+    }
+    .pill.active{
+      background: rgba(255,106,0,.16);
+      border-color: rgba(255,106,0,.38);
+      color: var(--text);
+    }
+
+    .cards{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .card{
+      padding:14px 14px;
+      border:1px solid var(--line);
+      border-radius: var(--radius2);
+      background: rgba(0,0,0,.18);
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+      transition: .15s transform, .15s border, .15s background;
+    }
+    .card:hover{
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,.14);
+      background: rgba(0,0,0,.22);
+    }
+    .card h3{
+      margin:0;
+      font-size:14px;
+      letter-spacing:-.2px;
+      line-height:1.35;
+    }
+    .card p{
+      margin:8px 0 0;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+    .meta{
+      display:flex; flex-direction:column; gap:8px; align-items:flex-end;
+      min-width: 120px;
+    }
+    .badge{
+      font-size:11px;
+      padding:6px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,106,0,.35);
+      background: rgba(255,106,0,.12);
+      color: var(--text);
+      white-space:nowrap;
+    }
+    .time{
+      font-size:11px;
+      color: var(--muted);
+      font-family: var(--mono);
+      white-space:nowrap;
+    }
+    .source{
+      font-size:11px;
+      color: rgba(255,255,255,.72);
+      opacity:.9;
+      white-space:nowrap;
+    }
+
+    /* Right side tools */
+    .stack{ display:flex; flex-direction:column; gap:16px; }
+
+    textarea{
+      width:100%;
+      min-height: 170px;
+      resize: vertical;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      padding:12px;
+      font-family: var(--mono);
+      font-size:12px;
+      line-height:1.45;
+      outline:none;
+    }
+    .hint{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .row{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .small{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .hr{
+      height:1px; background:var(--line); margin:14px 0;
+    }
+
+    /* Toast */
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(18,22,34,.88);
+      border:1px solid rgba(255,255,255,.12);
+      padding:10px 12px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      color: var(--text);
+      font-size:12px;
+      opacity:0;
+      pointer-events:none;
+      transition:.18s opacity, .18s transform;
+      z-index: 50;
+    }
+    .toast.show{
+      opacity:1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    footer{
+      margin-top:18px;
+      color:var(--muted);
+      font-size:12px;
+      text-align:center;
+      opacity:.85;
+    }
+    .accent{
+      color: var(--accent2);
+      font-weight:700;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M5 15c3-7 6-8 9-8 4 0 6 3 6 6 0 4-3 6-7 6-3 0-6-2-8-4Z" stroke="rgba(20,12,6,.85)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M7 10h4" stroke="rgba(20,12,6,.85)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="title">
+          <strong>miso_daily</strong>
+          <span id="todayLabel">Daily Stock Brief</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="chip" title="로컬 데이터 기준">
+          <span>업데이트</span>
+          <b id="updatedAt">—</b>
+        </div>
+        <button class="btn" id="btnCopyDigest" title="오늘 브리핑 문장 복사">
+          📋 브리핑 복사
+        </button>
+        <button class="btn primary" id="btnReset" title="샘플 데이터로 초기화">
+          ✨ 샘플 불러오기
+        </button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <section class="panel">
+        <div class="hd">
+          <div>
+            <h2>시장 스냅샷</h2>
+            <div class="sub">지표는 우측 입력(JSON)으로 바꿀 수 있어요.</div>
+          </div>
+          <div class="sub"><span class="accent">진한 오렌지</span> 포인트 UI</div>
+        </div>
+
+        <div class="bd">
+          <div class="snap" id="snapshot"></div>
+
+          <div class="hr"></div>
+
+          <div class="hd" style="padding:0 0 10px;border:0;">
+            <div>
+              <h2>오늘의 헤드라인</h2>
+              <div class="sub">검색/필터로 빠르게 정리</div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="search" role="search">
+              🔎 <input id="q" placeholder="키워드 검색 (예: 실적, CPI, AI, 반도체)" autocomplete="off" />
+            </div>
+            <div class="pill active" data-filter="all">전체</div>
+            <div class="pill" data-filter="macro">거시경제</div>
+            <div class="pill" data-filter="earnings">실적</div>
+            <div class="pill" data-filter="tech">테크</div>
+            <div class="pill" data-filter="energy">에너지</div>
+          </div>
+
+          <div class="cards" id="cards"></div>
+        </div>
+      </section>
+
+      <!-- RIGHT -->
+      <aside class="stack">
+        <section class="panel">
+          <div class="hd">
+            <div>
+              <h2>콘텐츠 입력</h2>
+              <div class="sub">뉴스/지표를 JSON으로 붙여넣으면 자동 반영</div>
+            </div>
+          </div>
+          <div class="bd">
+            <textarea id="jsonInput" spellcheck="false"></textarea>
+            <div class="row">
+              <button class="btn primary" id="btnApply">적용</button>
+              <button class="btn" id="btnFormat">정리(포맷)</button>
+              <button class="btn" id="btnCopyJson">JSON 복사</button>
+            </div>
+            <div class="hint">
+              <div class="small">형식</div>
+              <div class="small">- snapshot: [{ name, value, change, changePct }]</div>
+              <div class="small">- headlines: [{ title, summary, tag, source, timeISO, url? }]</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="hd">
+            <div>
+              <h2>카카오톡용 오늘 브리핑</h2>
+              <div class="sub">1줄 20~35자 느낌으로 자동 생성</div>
+            </div>
+          </div>
+          <div class="bd">
+            <div class="small" style="margin-bottom:10px;color:var(--muted);">
+              ※ 투자 조언/과장 없이, 흐름 중심으로 정리
+            </div>
+            <textarea id="digest" readonly></textarea>
+            <div class="row">
+              <button class="btn" id="btnCopyDigest2">📩 복사</button>
+              <button class="btn" id="btnShorten">✂︎ 더 짧게</button>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <footer>
+      © <span id="year"></span> <span class="accent">miso_daily</span> — 로컬 템플릿 (API 연결 없이도 동작)
+    </footer>
+  </div>
+
+  <div class="toast" id="toast">복사 완료</div>
+
+  <script>
+    // ---------- Utils ----------
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+    function toast(msg="완료"){
+      const t = $("#toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 1200);
+    }
+
+    function fmtNum(n){
+      if (n === null || n === undefined || n === "") return "—";
+      const num = Number(n);
+      if (Number.isNaN(num)) return String(n);
+      return num.toLocaleString("en-US");
+    }
+
+    function fmtSigned(n){
+      const num = Number(n);
+      if (Number.isNaN(num)) return String(n ?? "—");
+      const sign = num > 0 ? "+" : "";
+      return sign + num.toLocaleString("en-US");
+    }
+
+    function fmtPct(n){
+      const num = Number(n);
+      if (Number.isNaN(num)) return String(n ?? "—");
+      const sign = num > 0 ? "+" : "";
+      return sign + num.toFixed(2) + "%";
+    }
+
+    function relTime(iso){
+      try{
+        const d = new Date(iso);
+        const now = new Date();
+        const diff = Math.floor((now - d) / 60000); // minutes
+        if (diff < 1) return "방금";
+        if (diff < 60) return diff + "분 전";
+        const h = Math.floor(diff/60);
+        if (h < 24) return h + "시간 전";
+        const day = Math.floor(h/24);
+        return day + "일 전";
+      }catch(e){
+        return "—";
+      }
+    }
+
+    function todayKSTLabel(){
+      // 브라우저 로컬 기준(대부분 KST). 필요시 Intl로 KST 고정도 가능.
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const da = String(d.getDate()).padStart(2,"0");
+      return `${y}.${m}.${da}`;
+    }
+
+    // ---------- Sample Data ----------
+    const sample = {
+      updatedAtISO: new Date().toISOString(),
+      snapshot: [
+        { name:"S&P 500", value: 5050.12, change: +32.18, changePct: +0.64 },
+        { name:"NASDAQ", value: 16020.45, change: -41.20, changePct: -0.26 },
+        { name:"DOW", value: 38710.03, change: +105.50, changePct: +0.27 },
+        { name:"VIX", value: 14.82, change: +0.33, changePct: +2.28 },
+      ],
+      headlines: [
+        {
+          title:"연준 발언에 금리 기대 흔들…채권 변동성 확대",
+          summary:"인하 시점에 대한 시장 기대가 엇갈리며, 금리 민감주가 출렁였어요.",
+          tag:"macro",
+          source:"Macro Desk",
+          timeISO: new Date(Date.now()-1000*60*50).toISOString(),
+          url:""
+        },
+        {
+          title:"빅테크 실적, ‘매출은 견조·가이던스는 보수’ 구도",
+          summary:"클라우드/광고는 유지, 비용 관리가 관건. 주가는 가이던스에 반응.",
+          tag:"earnings",
+          source:"Earnings Wire",
+          timeISO: new Date(Date.now()-1000*60*130).toISOString(),
+          url:""
+        },
+        {
+          title:"AI 인프라 수요 지속…반도체 공급망 이슈 재부각",
+          summary:"서버/전력/패키징 병목이 다시 변수로. 관련 종목은 테마 민감.",
+          tag:"tech",
+          source:"Tech Brief",
+          timeISO: new Date(Date.now()-1000*60*220).toISOString(),
+          url:""
+        },
+        {
+          title:"유가 단기 반등…재고/지정학 이슈에 민감",
+          summary:"재고 지표와 중동 헤드라인이 단기 방향성 좌우. 에너지 섹터는 분산.",
+          tag:"energy",
+          source:"Energy Note",
+          timeISO: new Date(Date.now()-1000*60*400).toISOString(),
+          url:""
+        }
+      ]
+    };
+
+    // ---------- State ----------
+    let state = structuredClone(sample);
+    let activeFilter = "all";
+    let query = "";
+
+    // ---------- Renderers ----------
+    function renderHeader(){
+      $("#todayLabel").textContent = `Daily Stock Brief · ${todayKSTLabel()}`;
+      $("#updatedAt").textContent = new Date(state.updatedAtISO).toLocaleString();
+      $("#year").textContent = new Date().getFullYear();
+    }
+
+    function renderSnapshot(){
+      const el = $("#snapshot");
+      el.innerHTML = "";
+      state.snapshot.forEach(item => {
+        const updown = Number(item.changePct) >= 0 ? "up" : "down";
+        const dotColor = Number(item.changePct) >= 0 ? "rgba(124,255,168,.9)" : "rgba(255,124,124,.9)";
+        const card = document.createElement("div");
+        card.className = "kpi";
+        card.innerHTML = `
+          <div class="name"><span class="dot" style="background:${dotColor}"></span>${item.name}</div>
+          <div class="val">${fmtNum(item.value)}</div>
+          <div class="chg ${updown}">${fmtSigned(item.change)} (${fmtPct(item.changePct)})</div>
+        `;
+        el.appendChild(card);
+      });
+    }
+
+    function passesFilter(h){
+      if (activeFilter === "all") return true;
+      return (h.tag || "").toLowerCase() === activeFilter;
+    }
+
+    function passesQuery(h){
+      if (!query) return true;
+      const t = (h.title + " " + (h.summary||"") + " " + (h.source||"")).toLowerCase();
+      return t.includes(query.toLowerCase());
+    }
+
+    function renderCards(){
+      const el = $("#cards");
+      el.innerHTML = "";
+      const filtered = state.headlines
+        .filter(passesFilter)
+        .filter(passesQuery)
+        .sort((a,b)=> new Date(b.timeISO) - new Date(a.timeISO));
+
+      if (filtered.length === 0){
+        el.innerHTML = `<div class="small" style="color:var(--muted);padding:8px 2px;">결과가 없어요. 검색어나 필터를 바꿔보세요.</div>`;
+        return;
+      }
+
+      filtered.forEach(h => {
+        const tagLabel = ({
+          macro:"거시경제",
+          earnings:"실적",
+          tech:"테크",
+          energy:"에너지"
+        }[h.tag] || (h.tag || "기타"));
+
+        const card = document.createElement("a");
+        card.className = "card";
+        card.href = h.url && h.url.trim() ? h.url.trim() : "javascript:void(0)";
+        card.target = h.url && h.url.trim() ? "_blank" : "_self";
+        card.rel = "noopener";
+
+        card.innerHTML = `
+          <div>
+            <h3>${escapeHtml(h.title)}</h3>
+            <p>${escapeHtml(h.summary || "")}</p>
+          </div>
+          <div class="meta">
+            <div class="badge">${tagLabel}</div>
+            <div class="time">${relTime(h.timeISO)}</div>
+            <div class="source">${escapeHtml(h.source || "")}</div>
+          </div>
+        `;
+
+        el.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // ---------- Digest ----------
+    function buildDigest(compact=false){
+      // 1) 전체 흐름 3줄 + 용어 1개 + 결론
+      const top = [...state.headlines]
+        .sort((a,b)=> new Date(b.timeISO) - new Date(a.timeISO))
+        .slice(0,3);
+
+      const flow = [
+        "시장은 금리 기대에 민감했어요.",
+        "실적은 ‘견조·보수 가이던스’ 구도.",
+        "테마는 AI 인프라/공급망이 변수."
+      ];
+
+      // 아주 단순한 용어(필요시 커스터마이즈)
+      const term = {
+        word: "가이던스(Guideance)",
+        meaning: "기업이 제시하는 향후 실적 전망치",
+        why: "수치가 기대를 흔들면 주가가 즉시 반응"
+      };
+
+      const head = `📌  오늘의  miso_daily 헤드라인 (${todayKSTLabel()}) 📅`;
+      const lines = [];
+      lines.push(head);
+      lines.push("");
+      lines.push("🧠 쉽게 요약하기");
+      flow.forEach(s => lines.push(`- ${s}`));
+      lines.push("");
+      lines.push("📚 경제 용어 1개");
+      lines.push(`- 용어: ${term.word}`);
+      lines.push(`- 뜻: ${term.meaning}`);
+      lines.push(`- 왜 중요?: ${term.why}`);
+      lines.push("");
+      lines.push("✅ 결론");
+      lines.push("- 오늘은 ‘기대 vs 현실’의 싸움이에요. 숫자보다 톤(가이던스)을 보세요.");
+
+      if (!compact){
+        lines.push("");
+        lines.push("🗞 주요 기사 3개");
+        top.forEach((h,i)=> {
+          const one = `${i+1}) ${h.title}`;
+          lines.push(`- ${trimTo(one, 38)}`);
+        });
+      } else {
+        // 더 짧게: 핵심만
+        const mini = [
+          "금리 기대 흔들 → 변동성 확대",
+          "실적은 가이던스가 승부처",
+          "AI/반도체는 병목이 변수"
+        ];
+        return mini.map(s => `- ${s}`).join("\n");
+      }
+
+      return lines.join("\n");
+    }
+
+    function trimTo(s, max){
+      s = String(s);
+      if (s.length <= max) return s;
+      return s.slice(0, max-1) + "…";
+    }
+
+    // ---------- JSON Handling ----------
+    function loadToTextarea(){
+      $("#jsonInput").value = JSON.stringify(state, null, 2);
+    }
+
+    function applyFromTextarea(){
+      try{
+        const obj = JSON.parse($("#jsonInput").value);
+        // minimal validation
+        if (!obj.snapshot || !Array.isArray(obj.snapshot)) throw new Error("snapshot 배열이 필요합니다.");
+        if (!obj.headlines || !Array.isArray(obj.headlines)) throw new Error("headlines 배열이 필요합니다.");
+
+        obj.updatedAtISO = obj.updatedAtISO || new Date().toISOString();
+        state = obj;
+
+        renderAll();
+        toast("적용 완료");
+      }catch(e){
+        toast("JSON 오류: " + (e.message || "형식을 확인하세요"));
+      }
+    }
+
+    function renderAll(){
+      renderHeader();
+      renderSnapshot();
+      renderCards();
+      $("#digest").value = buildDigest(false);
+    }
+
+    // ---------- Events ----------
+    function bind(){
+      // filter pills
+      $$(".pill").forEach(p => {
+        p.addEventListener("click", () => {
+          $$(".pill").forEach(x => x.classList.remove("active"));
+          p.classList.add("active");
+          activeFilter = p.dataset.filter;
+          renderCards();
+        });
+      });
+
+      $("#q").addEventListener("input", (e)=> {
+        query = e.target.value.trim();
+        renderCards();
+      });
+
+      $("#btnApply").addEventListener("click", applyFromTextarea);
+      $("#btnFormat").addEventListener("click", ()=>{
+        try{
+          const obj = JSON.parse($("#jsonInput").value);
+          $("#jsonInput").value = JSON.stringify(obj, null, 2);
+          toast("정리 완료");
+        }catch{
+          toast("JSON 오류");
+        }
+      });
+
+      $("#btnCopyJson").addEventListener("click", async ()=>{
+        await navigator.clipboard.writeText($("#jsonInput").value);
+        toast("JSON 복사 완료");
+      });
+
+      $("#btnCopyDigest").addEventListener("click", async ()=>{
+        await navigator.clipboard.writeText($("#digest").value);
+        toast("브리핑 복사 완료");
+      });
+      $("#btnCopyDigest2").addEventListener("click", async ()=>{
+        await navigator.clipboard.writeText($("#digest").value);
+        toast("브리핑 복사 완료");
+      });
+
+      $("#btnShorten").addEventListener("click", ()=>{
+        $("#digest").value = buildDigest(true);
+        toast("짧게 만들었어요");
+      });
+
+      $("#btnReset").addEventListener("click", ()=>{
+        state = structuredClone(sample);
+        loadToTextarea();
+        renderAll();
+        toast("샘플 로드 완료");
+      });
+    }
+
+    // ---------- Init ----------
+    (function init(){
+      state.updatedAtISO = new Date().toISOString();
+      loadToTextarea();
+      bind();
+      renderAll();
+    })();
+  </script>
 </body>
 </html>
