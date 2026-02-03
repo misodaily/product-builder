@@ -536,6 +536,24 @@
     const $ = (s) => document.querySelector(s);
     const $$ = (s) => Array.from(document.querySelectorAll(s));
 
+    const SNAPSHOT_INDICES = [
+      { name: "KOSPI", symbols: ["^KOSPI", "^KS11"] },
+      { name: "KOSDAQ", symbols: ["^KOSDAQ", "^KQ11"] },
+      { name: "NASDAQ", symbols: ["^NDQ", "^IXIC"] },
+      { name: "S&P 500", symbols: ["^SPX", "^GSPC"] },
+      { name: "Dow Jones", symbols: ["^DJI", "^DJIA"] },
+      { name: "VIX", symbols: ["^VIX"] },
+      { name: "원/달러", symbols: ["USDKRW"] }
+    ];
+
+    const SNAPSHOT_SOURCES = [
+      { type: "stooq", name: "stooq-direct", base: "https://stooq.com/q/d/l/" },
+      { type: "stooq", name: "stooq-jina", base: "https://r.jina.ai/http://stooq.com/q/d/l/" }
+    ];
+
+    const SNAPSHOT_REFRESH_MS = 5 * 60 * 1000;
+    const SNAPSHOT_CACHE_KEY = "miso_daily_snapshot_cache";
+
     function toast(msg="완료"){
       const t = $("#toast");
       t.textContent = msg;
@@ -1201,6 +1219,157 @@
         .replaceAll("'","&#039;");
     }
 
+    function parseStooqCsv(csvText){
+      const lines = String(csvText || "").trim().split(/\r?\n/);
+      if (lines.length < 2) throw new Error("stooq csv empty");
+      const rows = lines.slice(1)
+        .map((line) => line.split(","))
+        .filter((cols) => cols.length >= 5 && cols[0] && cols[4]);
+      rows.sort((a,b)=> new Date(a[0]) - new Date(b[0]));
+      if (!rows.length) throw new Error("stooq csv rows missing");
+      return rows;
+    }
+
+    async function fetchStooqDaily(symbol, base){
+      const url = `${base}?s=${encodeURIComponent(symbol)}&i=d`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`stooq fetch ${res.status}`);
+      const text = await res.text();
+      const rows = parseStooqCsv(text);
+      const last = rows[rows.length-1];
+      const prev = rows.length > 1 ? rows[rows.length-2] : null;
+      const lastClose = Number(last[4]);
+      const prevClose = prev ? Number(prev[4]) : lastClose;
+      const change = lastClose - prevClose;
+      const changePct = prevClose ? (change / prevClose) * 100 : 0;
+      return { date: last[0], value: lastClose, change, changePct };
+    }
+
+    async function fetchStooqWithFallback(symbols){
+      const errors = [];
+      for (const source of SNAPSHOT_SOURCES){
+        for (const symbol of symbols){
+          try{
+            const data = await fetchStooqDaily(symbol, source.base);
+            return { data, symbol, source: source.name };
+          }catch(err){
+            errors.push(`${source.name}:${symbol}`);
+          }
+        }
+      }
+      throw new Error("stooq failed: " + errors.join(", "));
+    }
+
+    function parseSheetCsv(csvText){
+      const lines = String(csvText || "").trim().split(/\r?\n/);
+      if (lines.length < 2) throw new Error("sheet csv empty");
+      const header = lines[0].split(",").map((h)=> h.trim().toLowerCase());
+      const idx = {
+        name: header.indexOf("name"),
+        value: header.indexOf("value"),
+        change: header.indexOf("change"),
+        changePct: header.indexOf("changepct"),
+        asOf: header.indexOf("asof")
+      };
+      if (idx.name < 0 || idx.value < 0) throw new Error("sheet csv header missing");
+      return lines.slice(1).map((line)=>{
+        const cols = line.split(",");
+        return {
+          name: cols[idx.name],
+          value: Number(cols[idx.value]),
+          change: idx.change >= 0 ? Number(cols[idx.change]) : null,
+          changePct: idx.changePct >= 0 ? Number(cols[idx.changePct]) : null,
+          asOf: idx.asOf >= 0 ? cols[idx.asOf] : null
+        };
+      }).filter((row)=> row.name);
+    }
+
+    async function fetchSnapshotFromSheet(url){
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`sheet fetch ${res.status}`);
+      const text = await res.text();
+      return parseSheetCsv(text);
+    }
+
+    async function updateSnapshotFromSources(){
+      // Optional: if a published Google Sheets CSV URL is set, try it first.
+      if (window.SNAPSHOT_SHEET_URL) {
+        try{
+          const sheetSnapshot = await fetchSnapshotFromSheet(window.SNAPSHOT_SHEET_URL);
+          if (sheetSnapshot.length) {
+            applySnapshot(sheetSnapshot, "sheet");
+            return;
+          }
+        }catch(e){
+          console.warn("sheet snapshot failed", e);
+        }
+      }
+
+      const next = [];
+      for (const item of SNAPSHOT_INDICES){
+        try{
+          const result = await fetchStooqWithFallback(item.symbols);
+          next.push({
+            name: item.name,
+            value: result.data.value,
+            change: result.data.change,
+            changePct: result.data.changePct,
+            asOf: result.data.date,
+            source: result.source,
+            symbol: result.symbol
+          });
+        }catch(e){
+          console.warn("snapshot fetch failed", item.name, e);
+        }
+      }
+
+      if (next.length !== SNAPSHOT_INDICES.length) {
+        console.warn("snapshot incomplete, keeping previous data");
+        return;
+      }
+
+      applySnapshot(next, "stooq");
+    }
+
+    function applySnapshot(snapshot, sourceLabel){
+      const map = new Map(snapshot.map((s)=> [s.name, s]));
+      state.snapshot = state.snapshot.map((item)=>{
+        const next = map.get(item.name);
+        return next ? { ...item, ...next } : item;
+      });
+      state.updatedAtISO = new Date().toISOString();
+      renderSnapshot();
+      renderHeader();
+      loadToTextarea();
+      saveSnapshotCache(sourceLabel);
+    }
+
+    function saveSnapshotCache(sourceLabel){
+      try{
+        localStorage.setItem(SNAPSHOT_CACHE_KEY, JSON.stringify({
+          updatedAtISO: state.updatedAtISO,
+          snapshot: state.snapshot,
+          source: sourceLabel
+        }));
+      }catch(e){
+        console.warn("snapshot cache save failed", e);
+      }
+    }
+
+    function loadSnapshotCache(){
+      try{
+        const raw = localStorage.getItem(SNAPSHOT_CACHE_KEY);
+        if (!raw) return;
+        const cached = JSON.parse(raw);
+        if (cached && Array.isArray(cached.snapshot)) {
+          state.snapshot = cached.snapshot;
+          if (cached.updatedAtISO) state.updatedAtISO = cached.updatedAtISO;
+        }
+      }catch(e){
+        console.warn("snapshot cache load failed", e);
+      }
+    }
+
     function setupSnapshotSlider(){
       const scroller = $("#snapshot");
       const prev = $("#snapPrev");
@@ -1465,6 +1634,10 @@
       loadToTextarea();
       bind();
       renderAll();
+      loadSnapshotCache();
+      renderAll();
+      updateSnapshotFromSources();
+      setInterval(updateSnapshotFromSources, SNAPSHOT_REFRESH_MS);
       startLiveRefresh();
 
       // Firebase 실시간 업데이트 활성화
