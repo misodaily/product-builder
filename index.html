@@ -169,6 +169,46 @@
       grid-template-columns: repeat(4, 1fr);
       gap:10px;
     }
+    .snap-wrap{
+      position:relative;
+    }
+    .snap-nav{
+      position:absolute;
+      top:50%;
+      transform: translateY(-50%);
+      width:34px;
+      height:34px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(8,10,16,.75);
+      color:var(--text);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition:.12s transform, .12s opacity, .12s background;
+      z-index:2;
+    }
+    .snap-nav:hover{ transform: translateY(-50%) scale(1.03); background: rgba(255,255,255,.06); }
+    .snap-nav.hidden{ opacity:0; pointer-events:none; }
+    .snap-nav.prev{ left:6px; }
+    .snap-nav.next{ right:6px; }
+    .snap--slider{
+      display:flex;
+      overflow-x:auto;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding: 2px 6px 8px;
+    }
+    .snap--slider .kpi{
+      flex: 0 0 calc((100% - 30px) / 4);
+      scroll-snap-align:start;
+    }
+    @media (max-width: 980px){
+      .snap--slider .kpi{ flex-basis: calc((100% - 10px) / 2); }
+    }
+    @media (max-width: 600px){
+      .snap--slider .kpi{ flex-basis: 80%; }
+    }
     @media (max-width: 780px){
       .snap{ grid-template-columns: repeat(2, 1fr); }
     }
@@ -227,6 +267,11 @@
 
     .cards{
       display:flex; flex-direction:column; gap:10px;
+    }
+    .cards.scrollable{
+      overflow:auto;
+      scrollbar-gutter: stable;
+      padding-right:4px;
     }
     .card{
       padding:14px 14px;
@@ -395,7 +440,11 @@
         </div>
 
         <div class="bd">
-          <div class="snap" id="snapshot"></div>
+          <div class="snap-wrap" id="snapWrap">
+            <button class="snap-nav prev hidden" id="snapPrev" aria-label="이전 지표 보기">‹</button>
+            <div class="snap" id="snapshot"></div>
+            <button class="snap-nav next hidden" id="snapNext" aria-label="다음 지표 보기">›</button>
+          </div>
 
           <div class="hr"></div>
 
@@ -546,6 +595,8 @@
       snapshot: [
         { name:"KOSPI", value: 2580.45, change: +22.35, changePct: +0.87 },
         { name:"KOSDAQ", value: 745.82, change: -3.15, changePct: -0.42 },
+        { name:"NASDAQ", value: 16420.15, change: +98.22, changePct: +0.60 },
+        { name:"S&P 500", value: 4925.88, change: +24.16, changePct: +0.49 },
         { name:"원/달러", value: 1345.20, change: -5.80, changePct: -0.43 },
         { name:"한은 기준금리", value: 2.50, change: 0, changePct: 0 },
       ],
@@ -1071,6 +1122,7 @@
         `;
         el.appendChild(card);
       });
+      requestAnimationFrame(setupSnapshotSlider);
     }
 
     function passesFilter(h){
@@ -1093,6 +1145,8 @@
         .sort((a,b)=> new Date(b.timeISO) - new Date(a.timeISO));
 
       if (filtered.length === 0){
+        el.classList.remove("scrollable");
+        el.style.maxHeight = "";
         el.innerHTML = `<div class="small" style="color:var(--muted);padding:8px 2px;">결과가 없어요. 검색어나 필터를 바꿔보세요.</div>`;
         return;
       }
@@ -1134,6 +1188,7 @@
 
         el.appendChild(card);
       });
+      requestAnimationFrame(() => updateCardsScroll(filtered.length));
     }
 
     function escapeHtml(str){
@@ -1143,6 +1198,59 @@
         .replaceAll(">","&gt;")
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
+    }
+
+    function setupSnapshotSlider(){
+      const scroller = $("#snapshot");
+      const prev = $("#snapPrev");
+      const next = $("#snapNext");
+      const useSlider = state.snapshot.length >= 4;
+
+      scroller.classList.toggle("snap--slider", useSlider);
+
+      if (!useSlider){
+        prev.classList.add("hidden");
+        next.classList.add("hidden");
+        scroller.scrollLeft = 0;
+        return;
+      }
+
+      if (!scroller.dataset.bound){
+        scroller.addEventListener("scroll", () => updateSnapshotNav(), { passive: true });
+        scroller.dataset.bound = "1";
+      }
+
+      updateSnapshotNav();
+    }
+
+    function updateSnapshotNav(){
+      const scroller = $("#snapshot");
+      const prev = $("#snapPrev");
+      const next = $("#snapNext");
+      const max = scroller.scrollWidth - scroller.clientWidth - 2;
+      prev.classList.toggle("hidden", scroller.scrollLeft <= 2);
+      next.classList.toggle("hidden", scroller.scrollLeft >= max);
+    }
+
+    function updateCardsScroll(filteredCount){
+      const el = $("#cards");
+      el.classList.remove("scrollable");
+      el.style.maxHeight = "";
+
+      if (activeFilter !== "all" || filteredCount <= 5) return;
+
+      const cards = Array.from(el.children).filter((c) => c.classList.contains("card"));
+      if (cards.length < 5) return;
+
+      const gap = parseFloat(getComputedStyle(el).gap || "0");
+      let height = 0;
+      for (let i = 0; i < 5; i++){
+        height += cards[i].offsetHeight;
+      }
+      height += gap * 4;
+
+      el.style.maxHeight = height + "px";
+      el.classList.add("scrollable");
     }
 
     // ---------- Digest ----------
@@ -1235,6 +1343,13 @@
       $("#digest").value = buildDigest(false);
     }
 
+    function startLiveRefresh(){
+      setInterval(() => {
+        renderHeader();
+        renderCards();
+      }, 60000);
+    }
+
     // ---------- Events ----------
     function bind(){
       // filter pills
@@ -1288,6 +1403,15 @@
         renderAll();
         toast("샘플 로드 완료");
       });
+
+      $("#snapPrev").addEventListener("click", ()=>{
+        const scroller = $("#snapshot");
+        scroller.scrollBy({ left: -scroller.clientWidth, behavior: "smooth" });
+      });
+      $("#snapNext").addEventListener("click", ()=>{
+        const scroller = $("#snapshot");
+        scroller.scrollBy({ left: scroller.clientWidth, behavior: "smooth" });
+      });
     }
 
     // ---------- Firebase Integration ----------
@@ -1340,6 +1464,7 @@
       loadToTextarea();
       bind();
       renderAll();
+      startLiveRefresh();
 
       // Firebase 실시간 업데이트 활성화
       initFirebase();
