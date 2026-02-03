@@ -6,6 +6,25 @@
   <title>miso_daily | Stock Brief</title>
   <meta name="description" content="miso_daily - 주식 소식을 깔끔하게 모아보는 데일리 브리핑" />
 
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Firebase configuration
+    // TODO: Replace with your Firebase project config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Firebase SDK는 CDN에서 로드
+    window.FIREBASE_CONFIG = firebaseConfig;
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
   <style>
     :root{
       --bg:#0b0d12;
@@ -396,6 +415,15 @@
             <div class="pill" data-filter="earnings">실적</div>
             <div class="pill" data-filter="tech">테크</div>
             <div class="pill" data-filter="energy">에너지</div>
+            <div class="pill" data-filter="semiconductor">반도체</div>
+            <div class="pill" data-filter="ai">인공지능</div>
+            <div class="pill" data-filter="bio">바이오</div>
+            <div class="pill" data-filter="auto">자동차</div>
+            <div class="pill" data-filter="aerospace">우주항공/방산</div>
+            <div class="pill" data-filter="finance">금융/은행</div>
+            <div class="pill" data-filter="robot">로봇</div>
+            <div class="pill" data-filter="steel">철강</div>
+            <div class="pill" data-filter="chemical">화학</div>
           </div>
 
           <div class="cards" id="cards"></div>
@@ -516,42 +544,501 @@
     const sample = {
       updatedAtISO: new Date().toISOString(),
       snapshot: [
-        { name:"S&P 500", value: 5050.12, change: +32.18, changePct: +0.64 },
-        { name:"NASDAQ", value: 16020.45, change: -41.20, changePct: -0.26 },
-        { name:"DOW", value: 38710.03, change: +105.50, changePct: +0.27 },
-        { name:"VIX", value: 14.82, change: +0.33, changePct: +2.28 },
+        { name:"KOSPI", value: 2580.45, change: +22.35, changePct: +0.87 },
+        { name:"KOSDAQ", value: 745.82, change: -3.15, changePct: -0.42 },
+        { name:"원/달러", value: 1345.20, change: -5.80, changePct: -0.43 },
+        { name:"한은 기준금리", value: 2.50, change: 0, changePct: 0 },
       ],
       headlines: [
+        // 반도체 (5개)
         {
-          title:"연준 발언에 금리 기대 흔들…채권 변동성 확대",
-          summary:"인하 시점에 대한 시장 기대가 엇갈리며, 금리 민감주가 출렁였어요.",
+          title:"삼성·SK하이닉스 시총, 中 텐센트·알리바바 추월",
+          summary:"2월 3일 블룸버그 보도. AI 인프라 투자 열풍으로 K-반도체 공급망 중심 부상.",
+          tag:"semiconductor",
+          source:"서울신문",
+          timeISO: new Date(Date.now()-1000*60*45).toISOString(),
+          url:""
+        },
+        {
+          title:"2026년 영업익 200조 전망 확산…삼성 161조·하이닉스 135조",
+          summary:"보수적 설비투자로 공급제약 지속. HBM·DRAM·NAND 생산능력 사실상 매진.",
+          tag:"semiconductor",
+          source:"비즈니스포스트",
+          timeISO: new Date(Date.now()-1000*60*90).toISOString(),
+          url:""
+        },
+        {
+          title:"DRAM 가격 1년새 8.5배 폭등…$1.35→$11.5",
+          summary:"산업부 발표. 2025년 반도체 대란 여파로 AI 서버 수요 폭증 지속.",
+          tag:"semiconductor",
+          source:"글로벌이코노믹",
+          timeISO: new Date(Date.now()-1000*60*120).toISOString(),
+          url:""
+        },
+        {
+          title:"SK하이닉스 영업이익률 58% 달성…TSMC 54% 넘어",
+          summary:"4분기 실적 발표. 신제품·성능 경쟁으로 K-반도체 슈퍼 사이클 굳히기.",
+          tag:"semiconductor",
+          source:"서울신문",
+          timeISO: new Date(Date.now()-1000*60*150).toISOString(),
+          url:""
+        },
+        {
+          title:"삼성전자, 2026년 메모리 공급 부족 경고",
+          summary:"DS부문 VP 성명. 모든 메모리 제품 공급 부족 지속. 美 관세 압박도 변수.",
+          tag:"semiconductor",
+          source:"CIO Korea",
+          timeISO: new Date(Date.now()-1000*60*180).toISOString(),
+          url:""
+        },
+        // AI (5개)
+        {
+          title:"AI 프라이버시 민·관 정책협의회 2월 출범",
+          summary:"에이전트·피지컬AI 확산 대응. 데이터 처리·리스크 관리·정보주체 권리 3개 분과.",
+          tag:"ai",
+          source:"정책브리핑",
+          timeISO: new Date(Date.now()-1000*60*60).toISOString(),
+          url:""
+        },
+        {
+          title:"AI 기본법 1월 22일 전면 시행…윤리 원칙 명시",
+          summary:"인간 존엄성·투명성·공정성·책임성 핵심. 국회 2025년 통과.",
+          tag:"ai",
+          source:"데일리연합",
+          timeISO: new Date(Date.now()-1000*60*210).toISOString(),
+          url:""
+        },
+        {
+          title:"카카오 AI 서비스 약관 2월 4일부터 개정 적용",
+          summary:"오픈AI 파트너십 기반 챗GPT 연계. 오픈AI 위기설로 국내 영향 우려.",
+          tag:"ai",
+          source:"뉴데일리",
+          timeISO: new Date(Date.now()-1000*60*240).toISOString(),
+          url:""
+        },
+        {
+          title:"중기부 AI 예산 8천억원 투입 본격화",
+          summary:"AI·딥테크 투자, 제조 AX, 스타트업 육성. ICT R&D 1.67조 24.3% 증액.",
+          tag:"ai",
+          source:"정책브리핑",
+          timeISO: new Date(Date.now()-1000*60*270).toISOString(),
+          url:""
+        },
+        {
+          title:"2026 생성형 AI, IT 전략 전환 주도 전망",
+          summary:"전사적 활용·업무 자동화 확산. 에이전트 AI·피지컬 AI 본격 도입 예상.",
+          tag:"ai",
+          source:"CIO Korea",
+          timeISO: new Date(Date.now()-1000*60*300).toISOString(),
+          url:""
+        },
+        // 바이오 (5개)
+        {
+          title:"삼성바이오·셀트리온, 美 공장 인수로 '관세 동맹'",
+          summary:"송도-록빌, 인천-브랜치버그 이원화 생산체계. 글로벌 CDMO 확장 본격화.",
+          tag:"bio",
+          source:"데일리팜",
+          timeISO: new Date(Date.now()-1000*60*330).toISOString(),
+          url:""
+        },
+        {
+          title:"삼성바이오 시총 78조 유지…글로벌 3위",
+          summary:"삼성에피스 분할 후에도 유사 수준. 세계 최대 생산능력 보유.",
+          tag:"bio",
+          source:"더바이오뉴스",
+          timeISO: new Date(Date.now()-1000*60*360).toISOString(),
+          url:""
+        },
+        {
+          title:"셀트리온 시총 43조 달성…제약바이오 2위",
+          summary:"글로벌 6위. 바이오시밀러 11종→10년내 40여종 확대 계획.",
+          tag:"bio",
+          source:"더바이오뉴스",
+          timeISO: new Date(Date.now()-1000*60*390).toISOString(),
+          url:""
+        },
+        {
+          title:"美 생물보안법 발효…K-CDMO 탈중국 수혜 기대",
+          summary:"중국 바이오기업 거래 제한. 글로벌 제약사 공급망 재편 수주 전망.",
+          tag:"bio",
+          source:"더바이오뉴스",
+          timeISO: new Date(Date.now()-1000*60*420).toISOString(),
+          url:""
+        },
+        {
+          title:"2026 바이오 증시 '선택적 반등'…후기 임상 집중",
+          summary:"CDMO 설비 확장 가동. 해외 승인·임상 결과 이벤트 중심 투자.",
+          tag:"bio",
+          source:"바이오타임즈",
+          timeISO: new Date(Date.now()-1000*60*450).toISOString(),
+          url:""
+        },
+        // 자동차 (5개)
+        {
+          title:"설 연휴 무상점검 2월 11~13일…전기차 배터리도",
+          summary:"KAMA 주관. 현대·기아·GM·르노·KG모빌리티 5개사 참여. 고전압 냉각수 점검.",
+          tag:"auto",
+          source:"이코노믹밍글",
+          timeISO: new Date(Date.now()-1000*60*75).toISOString(),
+          url:""
+        },
+        {
+          title:"현대차 아이오닉7, 1회 충전 500km 목표 개발",
+          summary:"2026년 역대급 신차 라인업. 대형 SUV 세그먼트 경쟁력 확보.",
+          tag:"auto",
+          timeISO: new Date(Date.now()-1000*60*105).toISOString(),
+          url:""
+        },
+        {
+          title:"'2026 올해의 차' 시상식 2월 개최",
+          summary:"1월 12일 실차 테스트 완료. 기아 PV5·EV5·EV4, 현대 팰리세이드 경쟁.",
+          tag:"auto",
+          source:"다나와",
+          timeISO: new Date(Date.now()-1000*60*480).toISOString(),
+          url:""
+        },
+        {
+          title:"르노코리아, 2월 한달 최대 1,580만원 혜택",
+          summary:"세닉 E-Tech 자체 보조금 800만원. 정부 보조금 대신 즉시 할인 방식.",
+          tag:"auto",
+          source:"이코노믹밍글",
+          timeISO: new Date(Date.now()-1000*60*510).toISOString(),
+          url:""
+        },
+        {
+          title:"2026년 국내 자동차 판매 169만대 전망",
+          summary:"전년 대비 0.8% 증가. 제네시스 GV90, 기아 셀토스 HEV 등 16종 신차 투입.",
+          tag:"auto",
+          source:"아이뉴스24",
+          timeISO: new Date(Date.now()-1000*60*540).toISOString(),
+          url:""
+        },
+        // 우주항공/방산 (5개)
+        {
+          title:"캐나다 60조 잠수함 사업…국방장관 2월 2일 한화 방문",
+          summary:"스티븐 퓨어 장관 한화오션 거제 현장 시찰. 4일 HD현대 판교 R&D센터도.",
+          tag:"aerospace",
+          source:"아주경제",
+          timeISO: new Date(Date.now()-1000*60*135).toISOString(),
+          url:""
+        },
+        {
+          title:"KDDX 7.8조 사업자 선정…HD현대-한화 경쟁입찰",
+          summary:"2026년 말까지 계약 완료. 2030년까지 이지스 구축함 6척 건조.",
+          tag:"aerospace",
+          source:"SPN서울평양뉴스",
+          timeISO: new Date(Date.now()-1000*60*165).toISOString(),
+          url:""
+        },
+        {
+          title:"HD현대, LNG 2026서 차세대 가스선 공개",
+          summary:"2월 5일까지 카타르 도하. HD한국조선해양·HD현대중공업 참가.",
+          tag:"aerospace",
+          source:"서울신문",
+          timeISO: new Date(Date.now()-1000*60*195).toISOString(),
+          url:""
+        },
+        {
+          title:"우주항공청, 480억 규모 실용화 R&D 착수",
+          summary:"2월 2일 간담회. 2026~2030년 우주기술 사업화·창업 생태계 조성.",
+          tag:"aerospace",
+          source:"정책브리핑",
+          timeISO: new Date(Date.now()-1000*60*225).toISOString(),
+          url:""
+        },
+        {
+          title:"한화 협력사 상생협력 선포식…김경수 위원장 참석",
+          summary:"2월 3일 창원3사업장. 방산·우주항공 국가전략산업 중소기업 동반성장.",
+          tag:"aerospace",
+          source:"오마이뉴스",
+          timeISO: new Date(Date.now()-1000*60*255).toISOString(),
+          url:""
+        },
+        // 금융/은행 (5개)
+        {
+          title:"예금 22조 증시로 이동…한달새 수신 급감",
+          summary:"5대 은행 요구불예금 651조. 12월 대비 30.7조 감소. 증시 자금 유입.",
+          tag:"finance",
+          source:"서울신문",
+          timeISO: new Date(Date.now()-1000*60*285).toISOString(),
+          url:""
+        },
+        {
+          title:"4대 금융 주주환원율 50% 시대…KB 53% 전망",
+          summary:"KB·신한·하나 배당 확대. PBR 1배 돌파 기대. 2025년 순이익 18.3조.",
+          tag:"finance",
+          source:"비즈니스포스트",
+          timeISO: new Date(Date.now()-1000*60*315).toISOString(),
+          url:""
+        },
+        {
+          title:"은행대리업 2분기 도입…우체국서 은행 서비스",
+          summary:"전국 20여개 우체국 KB·신한·우리·하나 대출상품 판매. 금융접근성 개선.",
+          tag:"finance",
+          source:"정책브리핑",
+          timeISO: new Date(Date.now()-1000*60*345).toISOString(),
+          url:""
+        },
+        {
+          title:"은행채 금리 상승…주담대 4.25~6.39% 도달",
+          summary:"1주일새 5년물 3.675→3.715%. 증시 자금 이동으로 수신 압박.",
+          tag:"finance",
+          source:"서울신문",
+          timeISO: new Date(Date.now()-1000*60*375).toISOString(),
+          url:""
+        },
+        {
+          title:"새희망홀씨대출 5조로 확대…금리 9.9~12.5%",
+          summary:"2025년 4조→2026년 5조. 불법대출 피해방지대출 금리 5~6% 인하.",
+          tag:"finance",
+          source:"정책브리핑",
+          timeISO: new Date(Date.now()-1000*60*405).toISOString(),
+          url:""
+        },
+        // 로봇 (5개)
+        {
+          title:"CES 2026, 현대차 차세대 아틀라스 첫 공개",
+          summary:"보스턴다이내믹스 전동식 아틀라스. 2028년 생산현장 투입 구상.",
+          tag:"robot",
+          source:"현대차그룹",
+          timeISO: new Date(Date.now()-1000*60*435).toISOString(),
+          url:""
+        },
+        {
+          title:"HD현대로보틱스, 가반하중 50kg 협동로봇 프로토타입",
+          summary:"AW 2025 공개. 2026년 상반기 출시 예정. 35kg·25kg도 라인업.",
+          tag:"robot",
+          source:"KIDD",
+          timeISO: new Date(Date.now()-1000*60*465).toISOString(),
+          url:""
+        },
+        {
+          title:"현대차그룹, 2026년 키워드 '로보틱스' 경영 본격화",
+          summary:"인류를 위한 진보 비전. AI 로보틱스 생태계 확장 전략 발표.",
+          tag:"robot",
+          source:"서울경제",
+          timeISO: new Date(Date.now()-1000*60*495).toISOString(),
+          url:""
+        },
+        {
+          title:"피지컬 AI 상용화 원년…'일해서 돈 버는 로봇'",
+          summary:"CES 2026 평가 '전시→투입 무대'. 모베드 독립제어 4륜 플랫폼.",
+          tag:"robot",
+          source:"이비엔",
+          timeISO: new Date(Date.now()-1000*60*525).toISOString(),
+          url:""
+        },
+        {
+          title:"HD현대로보틱스, 2030년까지 AI 로봇 솔루션 다변화",
+          summary:"2026년 용접 자동화 조선소 적용. 가공·조립·검사·제조/물류 확대.",
+          tag:"robot",
+          source:"로봇신문",
+          timeISO: new Date(Date.now()-1000*60*555).toISOString(),
+          url:""
+        },
+        // 철강 (5개)
+        {
+          title:"현대제철, 탄소저감강판 세계 첫 양산 2월 3일",
+          summary:"탄소 배출 20% 감소. 하이브리드 전기로·고로 공정. 현대·기아 적용.",
+          tag:"steel",
+          source:"서울신문",
+          timeISO: new Date(Date.now()-1000*60*585).toISOString(),
+          url:""
+        },
+        {
+          title:"철강업계 '안전·탈탄소·AI' 2026년 3대 전략",
+          summary:"글로벌 과잉설비·보호무역 대응. 고부가 전환·저탄소 경쟁력 확보.",
+          tag:"steel",
+          source:"중앙이코노뉴스",
+          timeISO: new Date(Date.now()-1000*60*615).toISOString(),
+          url:""
+        },
+        {
+          title:"포스코, K-스틸법 기반 HyREX 데모 플랜트 진행",
+          summary:"광양 전기로 건설 차질없이. 저탄소 강재 적기 대응 기반 마련.",
+          tag:"steel",
+          source:"페로타임즈",
+          timeISO: new Date(Date.now()-1000*60*645).toISOString(),
+          url:""
+        },
+        {
+          title:"2월 브랜드평판 포스코홀딩스 1위…현대제철 2위",
+          summary:"포스코엠텍 3위. 포스코홀딩스 지수 396만 전월 대비 12.64% 감소.",
+          tag:"steel",
+          source:"공정한뉴스",
+          timeISO: new Date(Date.now()-1000*60*675).toISOString(),
+          url:""
+        },
+        {
+          title:"미국 철강 생산량 26년만에 일본 추월",
+          summary:"트럼프 관세·AI 데이터센터 건설 붐. 보호무역·인프라 투자 쌍끌이.",
+          tag:"steel",
+          source:"글로벌이코노믹",
+          timeISO: new Date(Date.now()-1000*60*705).toISOString(),
+          url:""
+        },
+        // 화학 (5개)
+        {
+          title:"LG화학, 배터리·에너지 포트폴리오 전환 가속",
+          summary:"양극재 내재화·밸류체인 강화. 시노펙과 소듐이온전지 양극·음극재 개발.",
+          tag:"chemical",
+          source:"이코노믹데일리",
+          timeISO: new Date(Date.now()-1000*60*735).toISOString(),
+          url:""
+        },
+        {
+          title:"롯데케미칼 대산공장 110만t 폐쇄…구조조정 본격",
+          summary:"NCC 재편안 제출. HD현대케미칼과 공동 대산산단 감산 계획.",
+          tag:"chemical",
+          source:"매거진한경",
+          timeISO: new Date(Date.now()-1000*60*765).toISOString(),
+          url:""
+        },
+        {
+          title:"롯데화학군 \"2026년, 미래 성장 대전환의 해\"",
+          summary:"이영준 총괄대표 신년사. 글로벌 경쟁력 강화·장기 성장 기반 확보.",
+          tag:"chemical",
+          source:"인더스트리투데이",
+          timeISO: new Date(Date.now()-1000*60*795).toISOString(),
+          url:""
+        },
+        {
+          title:"LG화학, 2026년 상반기 실적 한파 지속 전망",
+          summary:"구조조정·세대교체·재무건전성 개선 동시 추진. 반등 준비 착수.",
+          tag:"chemical",
+          source:"금융경제플러스",
+          timeISO: new Date(Date.now()-1000*60*825).toISOString(),
+          url:""
+        },
+        {
+          title:"1월 화학 브랜드평판 에코프로 1위…LG화학 2위",
+          summary:"포스코퓨처엠 3위, 롯데케미칼 4위. 배터리 소재 업체 상위권.",
+          tag:"chemical",
+          source:"공정한뉴스",
+          timeISO: new Date(Date.now()-1000*60*855).toISOString(),
+          url:""
+        },
+        // 거시경제 (5개)
+        {
+          title:"한은 기준금리 2.5% 5회 연속 동결",
+          summary:"1월 15일 통화정책회의. 완화 사이클 종료 신호. 가계부채·환율 우려.",
           tag:"macro",
-          source:"Macro Desk",
-          timeISO: new Date(Date.now()-1000*60*50).toISOString(),
+          source:"토스뱅크",
+          timeISO: new Date(Date.now()-1000*60*885).toISOString(),
           url:""
         },
         {
-          title:"빅테크 실적, ‘매출은 견조·가이던스는 보수’ 구도",
-          summary:"클라우드/광고는 유지, 비용 관리가 관건. 주가는 가이던스에 반응.",
+          title:"한은 차기 회의 2월 26일…추가 인하 문구 삭제",
+          summary:"금리 인하 고려 문구 제거. 4월 10일, 5월 28일, 7월 16일 일정.",
+          tag:"macro",
+          source:"토스뱅크",
+          timeISO: new Date(Date.now()-1000*60*915).toISOString(),
+          url:""
+        },
+        {
+          title:"2026년 GDP 성장률 1.8% 전망 유지",
+          summary:"KIF 경제전망. 정책 입안자 예측. 경기둔화 우려 속 완만한 회복.",
+          tag:"macro",
+          source:"한국금융연구원",
+          timeISO: new Date(Date.now()-1000*60*945).toISOString(),
+          url:""
+        },
+        {
+          title:"CPI 2.1%, 근원물가 2.0% 전망",
+          summary:"한은 물가 목표 달성 궤도. 헤드라인·근원 모두 2%대 안정화.",
+          tag:"macro",
+          source:"트레이딩이코노믹스",
+          timeISO: new Date(Date.now()-1000*60*975).toISOString(),
+          url:""
+        },
+        {
+          title:"연준, 금리 3.5~3.75% 유지…6월 인하 관측",
+          summary:"1월 FOMC. 시장은 25bp 6월 인하 예상. 고용·소득·소비 동반 둔화 주목.",
+          tag:"macro",
+          source:"Investing.com",
+          timeISO: new Date(Date.now()-1000*60*1005).toISOString(),
+          url:""
+        },
+        // 실적 (5개)
+        {
+          title:"셀레브라이트, 2월 11일 2025 회계연도 4분기 실적 발표",
+          summary:"미 증시 개장 전 공시. 연간 재무 실적 동시 공개.",
           tag:"earnings",
-          source:"Earnings Wire",
-          timeISO: new Date(Date.now()-1000*60*130).toISOString(),
+          source:"데일리연합",
+          timeISO: new Date(Date.now()-1000*60*1035).toISOString(),
           url:""
         },
         {
-          title:"AI 인프라 수요 지속…반도체 공급망 이슈 재부각",
-          summary:"서버/전력/패키징 병목이 다시 변수로. 관련 종목은 테마 민감.",
-          tag:"tech",
-          source:"Tech Brief",
-          timeISO: new Date(Date.now()-1000*60*220).toISOString(),
+          title:"롯데에너지머티리얼즈, 2월 4일 4분기 실적설명회",
+          summary:"서울 여의도. 국내 기관투자자 대상. 영업 잠정실적·사업 현황.",
+          tag:"earnings",
+          source:"이비엔",
+          timeISO: new Date(Date.now()-1000*60*1065).toISOString(),
           url:""
         },
         {
-          title:"유가 단기 반등…재고/지정학 이슈에 민감",
-          summary:"재고 지표와 중동 헤드라인이 단기 방향성 좌우. 에너지 섹터는 분산.",
+          title:"한국타이어, 2월 4일 오후 3시 30분 컨퍼런스콜",
+          summary:"애널리스트·기관투자자 대상 2025년 4분기 실적설명회.",
+          tag:"earnings",
+          source:"이비엔",
+          timeISO: new Date(Date.now()-1000*60*1095).toISOString(),
+          url:""
+        },
+        {
+          title:"포스코인터내셔널, 2월 3일 일본 도쿄 IR",
+          summary:"오후 2시. 해외 기관투자자 대상 2025년 경영실적 발표.",
+          tag:"earnings",
+          source:"이비엔",
+          timeISO: new Date(Date.now()-1000*60*1125).toISOString(),
+          url:""
+        },
+        {
+          title:"LG전자 \"2026년 가전 수요 회복 제한적\" 전망",
+          summary:"컨퍼런스콜. 상반기 점진적 회복, 회복폭은 크지 않을 것. 투트랙·구독 대응.",
+          tag:"earnings",
+          source:"이투데이",
+          timeISO: new Date(Date.now()-1000*60*1155).toISOString(),
+          url:""
+        },
+        // 에너지 (5개)
+        {
+          title:"LNG 공급 2026년 7% 증가…가격 하락 전망",
+          summary:"미국·카타르 대규모 신규 설비. 2026년 말 이후 공급>수요로 전환.",
           tag:"energy",
-          source:"Energy Note",
-          timeISO: new Date(Date.now()-1000*60*400).toISOString(),
+          source:"GS칼텍스",
+          timeISO: new Date(Date.now()-1000*60*1185).toISOString(),
+          url:""
+        },
+        {
+          title:"석유화학 NCC 감산 18~25% 목표 추진",
+          summary:"정부 구조조정 지원. 여수·대산·울산 재편안 제출. 상반기 실행 관건.",
+          tag:"energy",
+          source:"GS칼텍스",
+          timeISO: new Date(Date.now()-1000*60*1215).toISOString(),
+          url:""
+        },
+        {
+          title:"재생에너지 투자 확대…전력망 재편 가속",
+          summary:"AI·반도체 전력 수요 급증. HVDC 케이블 확충·계통 안정화 본격 투자.",
+          tag:"energy",
+          source:"정책브리핑",
+          timeISO: new Date(Date.now()-1000*60*1245).toISOString(),
+          url:""
+        },
+        {
+          title:"햇빛소득마을 2026년 500개 확산…2030년 2,500개",
+          summary:"기후에너지환경부 계획. 2월 중 추진단 출범. 에너지대전환 성과 원년.",
+          tag:"energy",
+          source:"정책브리핑",
+          timeISO: new Date(Date.now()-1000*60*1275).toISOString(),
+          url:""
+        },
+        {
+          title:"정유사 4분기 실적 개선 전망…석유화학은 흐림",
+          summary:"유가 하락에도 마진 방어. 화학 부문은 에틸렌 스프레드 손익분기점 미달.",
+          tag:"energy",
+          source:"KITA",
+          timeISO: new Date(Date.now()-1000*60*1305).toISOString(),
           url:""
         }
       ]
@@ -615,7 +1102,16 @@
           macro:"거시경제",
           earnings:"실적",
           tech:"테크",
-          energy:"에너지"
+          energy:"에너지",
+          semiconductor:"반도체",
+          ai:"인공지능",
+          bio:"바이오",
+          auto:"자동차",
+          aerospace:"우주항공/방산",
+          finance:"금융/은행",
+          robot:"로봇",
+          steel:"철강",
+          chemical:"화학"
         }[h.tag] || (h.tag || "기타"));
 
         const card = document.createElement("a");
@@ -657,16 +1153,16 @@
         .slice(0,3);
 
       const flow = [
-        "시장은 금리 기대에 민감했어요.",
-        "실적은 ‘견조·보수 가이던스’ 구도.",
-        "테마는 AI 인프라/공급망이 변수."
+        "한은 기준금리 동결로 완화 사이클 종료 신호.",
+        "반도체·AI 투자 확대로 산업 재편 가속화.",
+        "실적 시즌 본격화, 선택적 반등 국면 진입."
       ];
 
       // 아주 단순한 용어(필요시 커스터마이즈)
       const term = {
-        word: "가이던스(Guideance)",
-        meaning: "기업이 제시하는 향후 실적 전망치",
-        why: "수치가 기대를 흔들면 주가가 즉시 반응"
+        word: "HBM(High Bandwidth Memory)",
+        meaning: "초고대역폭 메모리, AI 서버 핵심 부품",
+        why: "AI 추론 시장 확대로 수요 급증, 반도체 업황 핵심 지표"
       };
 
       const head = `📌  오늘의  miso_daily 헤드라인 (${todayKSTLabel()}) 📅`;
@@ -682,7 +1178,7 @@
       lines.push(`- 왜 중요?: ${term.why}`);
       lines.push("");
       lines.push("✅ 결론");
-      lines.push("- 오늘은 ‘기대 vs 현실’의 싸움이에요. 숫자보다 톤(가이던스)을 보세요.");
+      lines.push("- 금리 동결 속 산업별 구조조정 본격화. AI·반도체 중심 선택적 투자 국면.");
 
       if (!compact){
         lines.push("");
@@ -694,9 +1190,9 @@
       } else {
         // 더 짧게: 핵심만
         const mini = [
-          "금리 기대 흔들 → 변동성 확대",
-          "실적은 가이던스가 승부처",
-          "AI/반도체는 병목이 변수"
+          "한은 기준금리 2.5% 동결 유지",
+          "반도체 1,880억弗·AI 8천억 투자",
+          "실적시즌 본격화, 선택적 반등"
         ];
         return mini.map(s => `- ${s}`).join("\n");
       }
@@ -794,12 +1290,59 @@
       });
     }
 
+    // ---------- Firebase Integration ----------
+    let db = null;
+    let unsubscribe = null;
+
+    function initFirebase(){
+      try {
+        // Firebase 초기화 (이미 설정된 경우 스킵)
+        if (!firebase.apps.length && window.FIREBASE_CONFIG) {
+          firebase.initializeApp(window.FIREBASE_CONFIG);
+          db = firebase.firestore();
+          console.log("Firebase initialized");
+
+          // Firestore 실시간 리스너 설정
+          unsubscribe = db.collection('news').doc('latest')
+            .onSnapshot((doc) => {
+              if (doc.exists) {
+                const data = doc.data();
+                console.log("Real-time news update received:", new Date().toISOString());
+
+                // state 업데이트
+                state = {
+                  updatedAtISO: data.updatedAtISO || new Date().toISOString(),
+                  snapshot: data.snapshot || state.snapshot,
+                  headlines: data.headlines || state.headlines
+                };
+
+                // UI 업데이트
+                renderAll();
+                loadToTextarea();
+                toast("뉴스가 자동 업데이트되었습니다 🔄");
+              }
+            }, (error) => {
+              console.error("Firestore listener error:", error);
+            });
+        } else {
+          console.log("Firebase already initialized or config missing");
+        }
+      } catch (error) {
+        console.error("Firebase initialization error:", error);
+        // Firebase 연결 실패시 로컬 샘플 데이터 사용
+        console.log("Using local sample data");
+      }
+    }
+
     // ---------- Init ----------
-    (function init(){
+      (function init(){
       state.updatedAtISO = new Date().toISOString();
       loadToTextarea();
       bind();
       renderAll();
+
+      // Firebase 실시간 업데이트 활성화
+      initFirebase();
     })();
   </script>
 </body>
