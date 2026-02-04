@@ -3,1646 +3,1272 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>miso_daily | Stock Brief</title>
-  <meta name="description" content="miso_daily - 주식 소식을 깔끔하게 모아보는 데일리 브리핑" />
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    // Firebase configuration
-    // TODO: Replace with your Firebase project config
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
+  <!-- SEO 기본 메타 (동적으로 업데이트됨) -->
+  <title>TOP50 종목 사건 아카이브 | miso_daily</title>
+  <meta name="description" content="국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다. 실적, 수주, 규제, 소송 등 투자에 중요한 이슈를 사건 단위로 확인하세요." />
 
-    // Firebase SDK는 CDN에서 로드
-    window.FIREBASE_CONFIG = firebaseConfig;
-  </script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="miso_daily" />
+  <meta property="og:title" content="TOP50 종목 사건 아카이브 | miso_daily" />
+  <meta property="og:description" content="국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다." />
+  <meta property="og:locale" content="ko_KR" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="TOP50 종목 사건 아카이브 | miso_daily" />
+  <meta name="twitter:description" content="국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다." />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="" id="canonical" />
 
   <style>
-    :root{
-      --bg:#0b0d12;
-      --panel:#121622;
-      --panel2:#0f1320;
-      --text:#e9edf6;
-      --muted:#a9b3c7;
-      --line:rgba(255,255,255,.08);
-
-      /* 진한 오렌지 포인트 */
-      --accent:#ff6a00;
-      --accent2:#ff8a3d;
-
+    :root {
+      --bg: #0b0d12;
+      --panel: #121622;
+      --panel2: #0f1320;
+      --text: #e9edf6;
+      --muted: #a9b3c7;
+      --line: rgba(255,255,255,.08);
+      --accent: #ff6a00;
+      --accent2: #ff8a3d;
       --shadow: 0 12px 30px rgba(0,0,0,.35);
       --radius: 18px;
       --radius2: 14px;
-      --max: 1120px;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     }
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    body{
-      margin:0;
-      font-family:var(--sans);
-      color:var(--text);
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100vh; }
+    body {
+      font-family: var(--sans);
+      color: var(--text);
       background:
         radial-gradient(1200px 700px at 20% -10%, rgba(255,106,0,.18), transparent 60%),
         radial-gradient(900px 600px at 95% 10%, rgba(255,138,61,.10), transparent 55%),
         linear-gradient(180deg, #07080c 0%, var(--bg) 40%, #07080c 100%);
-      letter-spacing:-0.2px;
+      letter-spacing: -0.2px;
+      line-height: 1.5;
     }
 
-    a{ color:inherit; text-decoration:none; }
-    .wrap{ max-width:var(--max); margin:0 auto; padding:28px 18px 60px; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
-    /* Topbar */
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px;
-      padding:14px 16px;
-      background:rgba(18,22,34,.66);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: rgba(18,22,34,.72);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
       backdrop-filter: blur(10px);
       box-shadow: var(--shadow);
-      position:sticky; top:14px; z-index:10;
+      position: sticky;
+      top: 14px;
+      z-index: 100;
+      margin-bottom: 20px;
     }
-    .brand{
-      display:flex; align-items:center; gap:12px;
-      min-width: 230px;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .logo{
-      width:42px; height:42px; border-radius:14px;
-      background: linear-gradient(135deg, var(--accent) 0%, #ffb07a 45%, rgba(255,106,0,.18) 100%);
-      display:grid; place-items:center;
-      box-shadow: 0 10px 22px rgba(255,106,0,.20);
-      border:1px solid rgba(255,255,255,.16);
-    }
-    .logo svg{ filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
-    .brand .title{
-      display:flex; flex-direction:column; line-height:1.05;
-    }
-    .brand .title strong{ font-size:16px; }
-    .brand .title span{ font-size:12px; color:var(--muted); margin-top:4px; }
-
-    .actions{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
-    }
-    .chip{
-      display:flex; gap:8px; align-items:center;
-      padding:10px 12px;
-      background: rgba(255,255,255,.04);
-      border:1px solid var(--line);
-      border-radius:999px;
-      color:var(--muted);
-      font-size:12px;
-      white-space:nowrap;
-    }
-    .chip b{ color:var(--text); font-weight:600; }
-    .btn{
-      cursor:pointer;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      color:var(--text);
-      font-weight:600;
-      transition:.15s transform, .15s background, .15s border;
-      display:inline-flex; align-items:center; gap:8px;
-    }
-    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); }
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(255,106,0,.95), rgba(255,138,61,.92));
-      border-color: rgba(255,255,255,.12);
-      color:#1a120b;
-      box-shadow: 0 10px 22px rgba(255,106,0,.22);
-    }
-    .btn.primary:hover{ transform: translateY(-1px); filter:saturate(1.05); }
-
-    /* Layout grid */
-    .grid{
-      display:grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap:16px;
-      margin-top:16px;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: 1fr; }
-      .brand{ min-width:auto; }
-    }
-
-    /* Panels */
-    .panel{
-      background: rgba(18,22,34,.72);
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .panel .hd{
-      padding:16px 16px 12px;
-      border-bottom:1px solid var(--line);
-      display:flex; justify-content:space-between; align-items:flex-end; gap:10px;
-    }
-    .panel .hd h2{
-      margin:0;
-      font-size:15px;
-      letter-spacing:-.2px;
-    }
-    .panel .hd .sub{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.25;
-    }
-    .panel .bd{ padding:16px; }
-
-    /* Market snapshot */
-    .snap{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:10px;
-    }
-    .snap-wrap{
-      position:relative;
-    }
-    .snap-nav{
-      position:absolute;
-      top:50%;
-      transform: translateY(-50%);
-      width:34px;
-      height:34px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(8,10,16,.75);
-      color:var(--text);
-      display:grid;
-      place-items:center;
-      cursor:pointer;
-      transition:.12s transform, .12s opacity, .12s background;
-      z-index:2;
-    }
-    .snap-nav:hover{ transform: translateY(-50%) scale(1.03); background: rgba(255,255,255,.06); }
-    .snap-nav.hidden{ opacity:0; pointer-events:none; }
-    .snap-nav.prev{ left:6px; }
-    .snap-nav.next{ right:6px; }
-    .snap--slider{
-      display:flex;
-      overflow-x:auto;
-      scroll-snap-type:x mandatory;
-      -webkit-overflow-scrolling: touch;
-      padding: 2px 6px 8px;
-    }
-    .snap--slider .kpi{
-      flex: 0 0 calc((100% - 30px) / 4);
-      scroll-snap-align:start;
-    }
-    @media (max-width: 980px){
-      .snap--slider .kpi{ flex-basis: calc((100% - 10px) / 2); }
-    }
-    @media (max-width: 600px){
-      .snap--slider .kpi{ flex-basis: 80%; }
-    }
-    @media (max-width: 780px){
-      .snap{ grid-template-columns: repeat(2, 1fr); }
-    }
-    .kpi{
-      padding:12px;
-      border:1px solid var(--line);
-      border-radius: var(--radius2);
-      background: rgba(0,0,0,.18);
-    }
-    .kpi .name{ color:var(--muted); font-size:12px; display:flex; align-items:center; gap:8px; }
-    .dot{
-      width:8px; height:8px; border-radius:999px;
-      background: rgba(255,255,255,.25);
-    }
-    .kpi .val{ margin-top:10px; font-size:18px; font-weight:750; letter-spacing:-.4px; }
-    .kpi .chg{ margin-top:6px; font-family:var(--mono); font-size:12px; color:var(--muted); }
-    .up{ color: #7CFFA8; }
-    .down{ color: #FF7C7C; }
-
-    /* Headlines */
-    .toolbar{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-      margin-bottom:10px;
-    }
-    .search{
-      flex: 1 1 240px;
-      display:flex; align-items:center; gap:8px;
-      padding:10px 12px;
-      border:1px solid var(--line);
+    .logo {
+      width: 42px;
+      height: 42px;
       border-radius: 14px;
-      background: rgba(0,0,0,.18);
+      background: linear-gradient(135deg, var(--accent) 0%, #ffb07a 45%, rgba(255,106,0,.18) 100%);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 22px rgba(255,106,0,.20);
+      border: 1px solid rgba(255,255,255,.16);
     }
-    .search input{
-      width:100%;
-      border:0; outline:0;
-      background:transparent;
-      color:var(--text);
-      font-size:13px;
-    }
-    .pill{
-      padding:8px 10px;
-      border-radius: 999px;
-      border:1px solid var(--line);
+    .brand-text strong { font-size: 16px; display: block; }
+    .brand-text span { font-size: 12px; color: var(--muted); }
+
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-link {
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
       background: rgba(255,255,255,.04);
-      color: var(--muted);
-      font-size:12px;
-      cursor:pointer;
-      transition:.12s;
-      user-select:none;
+      border: 1px solid var(--line);
+      transition: .15s;
     }
-    .pill.active{
-      background: rgba(255,106,0,.16);
-      border-color: rgba(255,106,0,.38);
-      color: var(--text);
+    .nav-link:hover, .nav-link.active {
+      background: rgba(255,106,0,.15);
+      border-color: rgba(255,106,0,.4);
+      text-decoration: none;
     }
 
-    .cards{
-      display:flex; flex-direction:column; gap:10px;
+    /* Timezone notice */
+    .tz-notice {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+      margin-bottom: 16px;
     }
-    .cards.scrollable{
-      overflow:auto;
-      scrollbar-gutter: stable;
-      padding-right:4px;
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
     }
-    .card{
-      padding:14px 14px;
-      border:1px solid var(--line);
+    .tab {
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      cursor: pointer;
+      transition: .15s;
+    }
+    .tab:hover, .tab.active {
+      background: rgba(255,106,0,.15);
+      border-color: rgba(255,106,0,.4);
+    }
+
+    /* Event Labels Filter */
+    .label-filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .label-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      cursor: pointer;
+      transition: .15s;
+    }
+    .label-pill:hover, .label-pill.active {
+      background: rgba(255,106,0,.15);
+      border-color: rgba(255,106,0,.4);
+    }
+
+    /* Section headers */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .section-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Stock Grid */
+    .stock-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .stock-item {
+      padding: 14px;
+      background: rgba(18,22,34,.72);
+      border: 1px solid var(--line);
       border-radius: var(--radius2);
-      background: rgba(0,0,0,.18);
-      display:grid;
-      grid-template-columns: 1fr auto;
-      gap:10px;
       transition: .15s transform, .15s border, .15s background;
     }
-    .card:hover{
-      transform: translateY(-1px);
+    .stock-item:hover {
+      transform: translateY(-2px);
       border-color: rgba(255,255,255,.14);
-      background: rgba(0,0,0,.22);
+      background: rgba(18,22,34,.85);
+      text-decoration: none;
     }
-    .card h3{
-      margin:0;
-      font-size:14px;
-      letter-spacing:-.2px;
-      line-height:1.35;
-    }
-    .card p{
-      margin:8px 0 0;
-      color: var(--muted);
-      font-size:12px;
-      line-height:1.5;
-    }
-    .meta{
-      display:flex; flex-direction:column; gap:8px; align-items:flex-end;
-      min-width: 120px;
-    }
-    .badge{
-      font-size:11px;
-      padding:6px 10px;
-      border-radius: 999px;
-      border:1px solid rgba(255,106,0,.35);
-      background: rgba(255,106,0,.12);
-      color: var(--text);
-      white-space:nowrap;
-    }
-    .time{
-      font-size:11px;
-      color: var(--muted);
-      font-family: var(--mono);
-      white-space:nowrap;
-    }
-    .source{
-      font-size:11px;
-      color: rgba(255,255,255,.72);
-      opacity:.9;
-      white-space:nowrap;
-    }
-
-    /* Right side tools */
-    .stack{ display:flex; flex-direction:column; gap:16px; }
-
-    textarea{
-      width:100%;
-      min-height: 170px;
-      resize: vertical;
-      border-radius: 14px;
-      border:1px solid var(--line);
-      background: rgba(0,0,0,.18);
-      color: var(--text);
-      padding:12px;
-      font-family: var(--mono);
-      font-size:12px;
-      line-height:1.45;
-      outline:none;
-    }
-    .hint{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.45;
-    }
-    .row{
-      display:flex; gap:10px; flex-wrap:wrap;
-      margin-top:10px;
-    }
-    .small{
-      font-size:12px;
-      color:var(--muted);
-    }
-    .hr{
-      height:1px; background:var(--line); margin:14px 0;
-    }
-
-    /* Toast */
-    .toast{
-      position: fixed;
-      left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%);
-      background: rgba(18,22,34,.88);
-      border:1px solid rgba(255,255,255,.12);
-      padding:10px 12px;
-      border-radius: 999px;
-      box-shadow: var(--shadow);
-      color: var(--text);
-      font-size:12px;
-      opacity:0;
-      pointer-events:none;
-      transition:.18s opacity, .18s transform;
-      z-index: 50;
-    }
-    .toast.show{
-      opacity:1;
-      transform: translateX(-50%) translateY(-2px);
-    }
-
-    footer{
-      margin-top:18px;
-      color:var(--muted);
-      font-size:12px;
-      text-align:center;
-      opacity:.85;
-    }
-    .accent{
+    .stock-ticker {
+      font-size: 14px;
+      font-weight: 700;
       color: var(--accent2);
-      font-weight:700;
     }
+    .stock-name {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stock-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 8px;
+      font-size: 10px;
+      border-radius: 999px;
+      background: rgba(255,106,0,.12);
+      border: 1px solid rgba(255,106,0,.35);
+    }
+
+    /* Event Cards */
+    .event-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .event-card {
+      padding: 16px;
+      background: rgba(18,22,34,.72);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      transition: .15s transform, .15s border;
+    }
+    .event-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.14);
+      text-decoration: none;
+    }
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .event-ticker-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .event-ticker {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent2);
+    }
+    .event-company {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .event-label {
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 999px;
+      background: rgba(255,106,0,.12);
+      border: 1px solid rgba(255,106,0,.35);
+      white-space: nowrap;
+    }
+    .event-label[data-type="earnings"] { background: rgba(76,175,80,.15); border-color: rgba(76,175,80,.4); }
+    .event-label[data-type="guidance"] { background: rgba(33,150,243,.15); border-color: rgba(33,150,243,.4); }
+    .event-label[data-type="contract"] { background: rgba(156,39,176,.15); border-color: rgba(156,39,176,.4); }
+    .event-label[data-type="regulation"] { background: rgba(255,152,0,.15); border-color: rgba(255,152,0,.4); }
+    .event-label[data-type="lawsuit"] { background: rgba(244,67,54,.15); border-color: rgba(244,67,54,.4); }
+    .event-label[data-type="recall"] { background: rgba(233,30,99,.15); border-color: rgba(233,30,99,.4); }
+    .event-label[data-type="macro"] { background: rgba(0,188,212,.15); border-color: rgba(0,188,212,.4); }
+
+    .event-summary {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .event-summary li {
+      margin-bottom: 4px;
+      list-style: none;
+      padding-left: 16px;
+      position: relative;
+    }
+    .event-summary li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+    .event-why {
+      font-size: 13px;
+      color: var(--muted);
+      padding: 10px 12px;
+      background: rgba(0,0,0,.2);
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .event-why strong {
+      color: var(--text);
+    }
+    .event-links {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .event-link {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .event-link:hover { color: var(--text); }
+    .event-link-source {
+      padding: 2px 6px;
+      background: rgba(255,255,255,.06);
+      border-radius: 4px;
+      font-size: 10px;
+    }
+    .event-link-time {
+      font-family: var(--mono);
+      font-size: 10px;
+      opacity: .7;
+    }
+    .event-time {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+      margin-top: 10px;
+    }
+
+    /* Stock Detail Page */
+    .stock-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .stock-header-main h1 {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .stock-header-main .ticker {
+      font-size: 14px;
+      color: var(--accent2);
+      font-weight: 600;
+    }
+    .stock-header-main .exchange {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .timeline-section {
+      margin-top: 24px;
+    }
+    .timeline-date {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      margin: 16px 0 8px;
+      padding-left: 4px;
+    }
+
+    /* Event Detail Page */
+    .event-detail-header {
+      margin-bottom: 24px;
+    }
+    .event-detail-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .event-detail-meta {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .related-section {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+    .related-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .related-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .related-link {
+      padding: 8px 12px;
+      font-size: 12px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      transition: .15s;
+    }
+    .related-link:hover {
+      background: rgba(255,106,0,.15);
+      border-color: rgba(255,106,0,.4);
+      text-decoration: none;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+    .empty-state h2 {
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .empty-state p {
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .breadcrumb a:hover { color: var(--text); }
+    .breadcrumb-sep { opacity: .5; }
+
+    /* Footer */
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    footer .accent { color: var(--accent2); font-weight: 700; }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .header { flex-direction: column; gap: 12px; }
+      .nav-links { width: 100%; justify-content: center; }
+      .stock-grid { grid-template-columns: repeat(2, 1fr); }
+      .event-header { flex-direction: column; }
+    }
+
+    /* Utility */
+    .hidden { display: none !important; }
   </style>
 </head>
-
 <body>
   <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
+    <header class="header">
+      <a href="/top50" class="brand">
         <div class="logo" aria-hidden="true">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M5 15c3-7 6-8 9-8 4 0 6 3 6 6 0 4-3 6-7 6-3 0-6-2-8-4Z" stroke="rgba(20,12,6,.85)" stroke-width="2" stroke-linecap="round"/>
             <path d="M7 10h4" stroke="rgba(20,12,6,.85)" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </div>
-        <div class="title">
+        <div class="brand-text">
           <strong>miso_daily</strong>
-          <span id="todayLabel">Daily Stock Brief</span>
+          <span>TOP50 사건 아카이브</span>
         </div>
-      </div>
+      </a>
+      <nav class="nav-links">
+        <a href="/top50" class="nav-link" data-nav="home">홈</a>
+        <a href="/top50?market=kr" class="nav-link" data-nav="kr">국내 25</a>
+        <a href="/top50?market=us" class="nav-link" data-nav="us">미국 25</a>
+      </nav>
+    </header>
 
-      <div class="actions">
-        <div class="chip" title="로컬 데이터 기준">
-          <span>업데이트</span>
-          <b id="updatedAt">—</b>
-        </div>
-        <button class="btn" id="btnCopyDigest" title="오늘 브리핑 문장 복사">
-          📋 브리핑 복사
-        </button>
-        <button class="btn primary" id="btnReset" title="샘플 데이터로 초기화">
-          ✨ 샘플 불러오기
-        </button>
-      </div>
+    <div class="tz-notice">
+      기준 시각: Asia/Seoul (KST) · 출처 링크 클릭시 원문으로 이동
     </div>
 
-    <div class="grid">
-      <!-- LEFT -->
-      <section class="panel">
-        <div class="hd">
-          <div>
-            <h2>시장 스냅샷</h2>
-            <div class="sub">지표는 우측 입력(JSON)으로 바꿀 수 있어요.</div>
-          </div>
-          <div class="sub"><span class="accent">진한 오렌지</span> 포인트 UI</div>
-        </div>
-
-        <div class="bd">
-          <div class="snap-wrap" id="snapWrap">
-            <button class="snap-nav prev hidden" id="snapPrev" aria-label="이전 지표 보기">‹</button>
-            <div class="snap" id="snapshot"></div>
-            <button class="snap-nav next hidden" id="snapNext" aria-label="다음 지표 보기">›</button>
-          </div>
-
-          <div class="hr"></div>
-
-          <div class="hd" style="padding:0 0 10px;border:0;">
-            <div>
-              <h2>오늘의 헤드라인</h2>
-              <div class="sub">검색/필터로 빠르게 정리</div>
-            </div>
-          </div>
-
-          <div class="toolbar">
-            <div class="search" role="search">
-              🔎 <input id="q" placeholder="키워드 검색 (예: 실적, CPI, AI, 반도체)" autocomplete="off" />
-            </div>
-            <div class="pill active" data-filter="all">전체</div>
-            <div class="pill" data-filter="macro">거시경제</div>
-            <div class="pill" data-filter="earnings">실적</div>
-            <div class="pill" data-filter="tech">테크</div>
-            <div class="pill" data-filter="energy">에너지</div>
-            <div class="pill" data-filter="semiconductor">반도체</div>
-            <div class="pill" data-filter="ai">인공지능</div>
-            <div class="pill" data-filter="bio">바이오</div>
-            <div class="pill" data-filter="auto">자동차</div>
-            <div class="pill" data-filter="aerospace">우주항공/방산</div>
-            <div class="pill" data-filter="finance">금융/은행</div>
-            <div class="pill" data-filter="robot">로봇</div>
-            <div class="pill" data-filter="steel">철강</div>
-            <div class="pill" data-filter="chemical">화학</div>
-          </div>
-
-          <div class="cards" id="cards"></div>
-        </div>
-      </section>
-
-      <!-- RIGHT -->
-      <aside class="stack">
-        <section class="panel">
-          <div class="hd">
-            <div>
-              <h2>콘텐츠 입력</h2>
-              <div class="sub">뉴스/지표를 JSON으로 붙여넣으면 자동 반영</div>
-            </div>
-          </div>
-          <div class="bd">
-            <textarea id="jsonInput" spellcheck="false"></textarea>
-            <div class="row">
-              <button class="btn primary" id="btnApply">적용</button>
-              <button class="btn" id="btnFormat">정리(포맷)</button>
-              <button class="btn" id="btnCopyJson">JSON 복사</button>
-            </div>
-            <div class="hint">
-              <div class="small">형식</div>
-              <div class="small">- snapshot: [{ name, value, change, changePct }]</div>
-              <div class="small">- headlines: [{ title, summary, tag, source, timeISO, url? }]</div>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="hd">
-            <div>
-              <h2>카카오톡용 오늘 브리핑</h2>
-              <div class="sub">1줄 20~35자 느낌으로 자동 생성</div>
-            </div>
-          </div>
-          <div class="bd">
-            <div class="small" style="margin-bottom:10px;color:var(--muted);">
-              ※ 투자 조언/과장 없이, 흐름 중심으로 정리
-            </div>
-            <textarea id="digest" readonly></textarea>
-            <div class="row">
-              <button class="btn" id="btnCopyDigest2">📩 복사</button>
-              <button class="btn" id="btnShorten">✂︎ 더 짧게</button>
-            </div>
-          </div>
-        </section>
-      </aside>
-    </div>
+    <main id="app">
+      <div class="loading">로딩 중...</div>
+    </main>
 
     <footer>
-      © <span id="year"></span> <span class="accent">miso_daily</span> — 로컬 템플릿 (API 연결 없이도 동작)
+      <p>© <span id="year">2026</span> <span class="accent">miso_daily</span> — TOP50 종목 사건 아카이브</p>
+      <p style="margin-top:8px;font-size:11px;opacity:.7;">
+        본 서비스는 뉴스 원문을 직접 게시하지 않으며, 출처 링크를 통해 원문을 확인할 수 있습니다.<br>
+        투자 조언이 아니며, 투자 결정은 본인의 판단과 책임하에 이루어져야 합니다.
+      </p>
     </footer>
   </div>
 
-  <div class="toast" id="toast">복사 완료</div>
-
-  <script>
-    // ---------- Utils ----------
-    const $ = (s) => document.querySelector(s);
-    const $$ = (s) => Array.from(document.querySelectorAll(s));
-
-    const SNAPSHOT_INDICES = [
-      { name: "KOSPI", symbols: ["^KOSPI", "^KS11"] },
-      { name: "KOSDAQ", symbols: ["^KOSDAQ", "^KQ11"] },
-      { name: "NASDAQ", symbols: ["^NDQ", "^IXIC"] },
-      { name: "S&P 500", symbols: ["^SPX", "^GSPC"] },
-      { name: "Dow Jones", symbols: ["^DJI", "^DJIA"] },
-      { name: "VIX", symbols: ["^VIX"] },
-      { name: "원/달러", symbols: ["USDKRW"] }
+  <script type="module">
+    // ==================== Data Imports ====================
+    // TOP50 종목 마스터
+    const TOP50_KR = [
+      { market: 'kr', ticker: '005930', exchange: 'KRX', name_ko: '삼성전자', name_en: 'Samsung Electronics' },
+      { market: 'kr', ticker: '000660', exchange: 'KRX', name_ko: 'SK하이닉스', name_en: 'SK Hynix' },
+      { market: 'kr', ticker: '373220', exchange: 'KRX', name_ko: 'LG에너지솔루션', name_en: 'LG Energy Solution' },
+      { market: 'kr', ticker: '207940', exchange: 'KRX', name_ko: '삼성바이오로직스', name_en: 'Samsung Biologics' },
+      { market: 'kr', ticker: '005380', exchange: 'KRX', name_ko: '현대차', name_en: 'Hyundai Motor' },
+      { market: 'kr', ticker: '068270', exchange: 'KRX', name_ko: '셀트리온', name_en: 'Celltrion' },
+      { market: 'kr', ticker: '000270', exchange: 'KRX', name_ko: '기아', name_en: 'Kia' },
+      { market: 'kr', ticker: '035420', exchange: 'KRX', name_ko: 'NAVER', name_en: 'NAVER' },
+      { market: 'kr', ticker: '051910', exchange: 'KRX', name_ko: 'LG화학', name_en: 'LG Chem' },
+      { market: 'kr', ticker: '006400', exchange: 'KRX', name_ko: '삼성SDI', name_en: 'Samsung SDI' },
+      { market: 'kr', ticker: '035720', exchange: 'KRX', name_ko: '카카오', name_en: 'Kakao' },
+      { market: 'kr', ticker: '028260', exchange: 'KRX', name_ko: '삼성물산', name_en: 'Samsung C&T' },
+      { market: 'kr', ticker: '105560', exchange: 'KRX', name_ko: 'KB금융', name_en: 'KB Financial' },
+      { market: 'kr', ticker: '055550', exchange: 'KRX', name_ko: '신한지주', name_en: 'Shinhan Financial' },
+      { market: 'kr', ticker: '012330', exchange: 'KRX', name_ko: '현대모비스', name_en: 'Hyundai Mobis' },
+      { market: 'kr', ticker: '066570', exchange: 'KRX', name_ko: 'LG전자', name_en: 'LG Electronics' },
+      { market: 'kr', ticker: '003670', exchange: 'KRX', name_ko: '포스코홀딩스', name_en: 'POSCO Holdings' },
+      { market: 'kr', ticker: '086790', exchange: 'KRX', name_ko: '하나금융지주', name_en: 'Hana Financial' },
+      { market: 'kr', ticker: '034730', exchange: 'KRX', name_ko: 'SK', name_en: 'SK Inc' },
+      { market: 'kr', ticker: '096770', exchange: 'KRX', name_ko: 'SK이노베이션', name_en: 'SK Innovation' },
+      { market: 'kr', ticker: '032830', exchange: 'KRX', name_ko: '삼성생명', name_en: 'Samsung Life' },
+      { market: 'kr', ticker: '003550', exchange: 'KRX', name_ko: 'LG', name_en: 'LG Corp' },
+      { market: 'kr', ticker: '017670', exchange: 'KRX', name_ko: 'SK텔레콤', name_en: 'SK Telecom' },
+      { market: 'kr', ticker: '030200', exchange: 'KRX', name_ko: 'KT', name_en: 'KT Corp' },
+      { market: 'kr', ticker: '036570', exchange: 'KRX', name_ko: '엔씨소프트', name_en: 'NCSOFT' },
     ];
 
-    const SNAPSHOT_SOURCES = [
-      { type: "stooq", name: "stooq-direct", base: "https://stooq.com/q/d/l/" },
-      { type: "stooq", name: "stooq-jina", base: "https://r.jina.ai/http://stooq.com/q/d/l/" }
+    const TOP50_US = [
+      { market: 'us', ticker: 'AAPL', exchange: 'NASDAQ', name_ko: '애플', name_en: 'Apple' },
+      { market: 'us', ticker: 'MSFT', exchange: 'NASDAQ', name_ko: '마이크로소프트', name_en: 'Microsoft' },
+      { market: 'us', ticker: 'NVDA', exchange: 'NASDAQ', name_ko: '엔비디아', name_en: 'NVIDIA' },
+      { market: 'us', ticker: 'GOOGL', exchange: 'NASDAQ', name_ko: '알파벳', name_en: 'Alphabet' },
+      { market: 'us', ticker: 'AMZN', exchange: 'NASDAQ', name_ko: '아마존', name_en: 'Amazon' },
+      { market: 'us', ticker: 'META', exchange: 'NASDAQ', name_ko: '메타', name_en: 'Meta Platforms' },
+      { market: 'us', ticker: 'TSLA', exchange: 'NASDAQ', name_ko: '테슬라', name_en: 'Tesla' },
+      { market: 'us', ticker: 'BRK.B', exchange: 'NYSE', name_ko: '버크셔해서웨이', name_en: 'Berkshire Hathaway' },
+      { market: 'us', ticker: 'AVGO', exchange: 'NASDAQ', name_ko: '브로드컴', name_en: 'Broadcom' },
+      { market: 'us', ticker: 'JPM', exchange: 'NYSE', name_ko: 'JP모건', name_en: 'JPMorgan Chase' },
+      { market: 'us', ticker: 'LLY', exchange: 'NYSE', name_ko: '일라이릴리', name_en: 'Eli Lilly' },
+      { market: 'us', ticker: 'V', exchange: 'NYSE', name_ko: '비자', name_en: 'Visa' },
+      { market: 'us', ticker: 'UNH', exchange: 'NYSE', name_ko: '유나이티드헬스', name_en: 'UnitedHealth' },
+      { market: 'us', ticker: 'XOM', exchange: 'NYSE', name_ko: '엑슨모빌', name_en: 'Exxon Mobil' },
+      { market: 'us', ticker: 'MA', exchange: 'NYSE', name_ko: '마스터카드', name_en: 'Mastercard' },
+      { market: 'us', ticker: 'COST', exchange: 'NASDAQ', name_ko: '코스트코', name_en: 'Costco' },
+      { market: 'us', ticker: 'JNJ', exchange: 'NYSE', name_ko: '존슨앤존슨', name_en: 'Johnson & Johnson' },
+      { market: 'us', ticker: 'HD', exchange: 'NYSE', name_ko: '홈디포', name_en: 'Home Depot' },
+      { market: 'us', ticker: 'PG', exchange: 'NYSE', name_ko: 'P&G', name_en: 'Procter & Gamble' },
+      { market: 'us', ticker: 'ABBV', exchange: 'NYSE', name_ko: '애브비', name_en: 'AbbVie' },
+      { market: 'us', ticker: 'WMT', exchange: 'NYSE', name_ko: '월마트', name_en: 'Walmart' },
+      { market: 'us', ticker: 'NFLX', exchange: 'NASDAQ', name_ko: '넷플릭스', name_en: 'Netflix' },
+      { market: 'us', ticker: 'CRM', exchange: 'NYSE', name_ko: '세일즈포스', name_en: 'Salesforce' },
+      { market: 'us', ticker: 'AMD', exchange: 'NASDAQ', name_ko: 'AMD', name_en: 'AMD' },
+      { market: 'us', ticker: 'ORCL', exchange: 'NYSE', name_ko: '오라클', name_en: 'Oracle' },
     ];
 
-    const SNAPSHOT_REFRESH_MS = 5 * 60 * 1000;
-    const SNAPSHOT_CACHE_KEY = "miso_daily_snapshot_cache";
+    const TOP50 = [...TOP50_KR, ...TOP50_US];
 
-    function toast(msg="완료"){
-      const t = $("#toast");
-      t.textContent = msg;
-      t.classList.add("show");
-      setTimeout(() => t.classList.remove("show"), 1200);
-    }
-
-    function fmtNum(n){
-      if (n === null || n === undefined || n === "") return "—";
-      const num = Number(n);
-      if (Number.isNaN(num)) return String(n);
-      return num.toLocaleString("en-US");
-    }
-
-    function fmtSigned(n){
-      const num = Number(n);
-      if (Number.isNaN(num)) return String(n ?? "—");
-      const sign = num > 0 ? "+" : "";
-      return sign + num.toLocaleString("en-US");
-    }
-
-    function fmtPct(n){
-      const num = Number(n);
-      if (Number.isNaN(num)) return String(n ?? "—");
-      const sign = num > 0 ? "+" : "";
-      return sign + num.toFixed(2) + "%";
-    }
-
-    function relTime(iso){
-      try{
-        const d = new Date(iso);
-        const now = new Date();
-        const diff = Math.floor((now - d) / 60000); // minutes
-        if (diff < 1) return "방금";
-        if (diff < 60) return diff + "분 전";
-        const h = Math.floor(diff/60);
-        if (h < 24) return h + "시간 전";
-        const day = Math.floor(h/24);
-        return day + "일 전";
-      }catch(e){
-        return "—";
-      }
-    }
-
-    function todayKSTLabel(){
-      // 브라우저 로컬 기준(대부분 KST). 필요시 Intl로 KST 고정도 가능.
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      const da = String(d.getDate()).padStart(2,"0");
-      return `${y}.${m}.${da}`;
-    }
-
-    // ---------- Sample Data ----------
-    const sample = {
-      updatedAtISO: new Date().toISOString(),
-      snapshot: [
-        { name:"KOSPI", value: null, change: null, changePct: null },
-        { name:"KOSDAQ", value: null, change: null, changePct: null },
-        { name:"NASDAQ", value: null, change: null, changePct: null },
-        { name:"S&P 500", value: null, change: null, changePct: null },
-        { name:"Dow Jones", value: null, change: null, changePct: null },
-        { name:"VIX", value: null, change: null, changePct: null },
-        { name:"원/달러", value: null, change: null, changePct: null },
-      ],
-      headlines: [
-        // 반도체 (5개)
-        {
-          title:"삼성·SK하이닉스 시총, 中 텐센트·알리바바 추월",
-          summary:"2월 3일 블룸버그 보도. AI 인프라 투자 열풍으로 K-반도체 공급망 중심 부상.",
-          tag:"semiconductor",
-          source:"서울신문",
-          timeISO: new Date(Date.now()-1000*60*45).toISOString(),
-          url:""
-        },
-        {
-          title:"2026년 영업익 200조 전망 확산…삼성 161조·하이닉스 135조",
-          summary:"보수적 설비투자로 공급제약 지속. HBM·DRAM·NAND 생산능력 사실상 매진.",
-          tag:"semiconductor",
-          source:"비즈니스포스트",
-          timeISO: new Date(Date.now()-1000*60*90).toISOString(),
-          url:""
-        },
-        {
-          title:"DRAM 가격 1년새 8.5배 폭등…$1.35→$11.5",
-          summary:"산업부 발표. 2025년 반도체 대란 여파로 AI 서버 수요 폭증 지속.",
-          tag:"semiconductor",
-          source:"글로벌이코노믹",
-          timeISO: new Date(Date.now()-1000*60*120).toISOString(),
-          url:""
-        },
-        {
-          title:"SK하이닉스 영업이익률 58% 달성…TSMC 54% 넘어",
-          summary:"4분기 실적 발표. 신제품·성능 경쟁으로 K-반도체 슈퍼 사이클 굳히기.",
-          tag:"semiconductor",
-          source:"서울신문",
-          timeISO: new Date(Date.now()-1000*60*150).toISOString(),
-          url:""
-        },
-        {
-          title:"삼성전자, 2026년 메모리 공급 부족 경고",
-          summary:"DS부문 VP 성명. 모든 메모리 제품 공급 부족 지속. 美 관세 압박도 변수.",
-          tag:"semiconductor",
-          source:"CIO Korea",
-          timeISO: new Date(Date.now()-1000*60*180).toISOString(),
-          url:""
-        },
-        // AI (5개)
-        {
-          title:"AI 프라이버시 민·관 정책협의회 2월 출범",
-          summary:"에이전트·피지컬AI 확산 대응. 데이터 처리·리스크 관리·정보주체 권리 3개 분과.",
-          tag:"ai",
-          source:"정책브리핑",
-          timeISO: new Date(Date.now()-1000*60*60).toISOString(),
-          url:""
-        },
-        {
-          title:"AI 기본법 1월 22일 전면 시행…윤리 원칙 명시",
-          summary:"인간 존엄성·투명성·공정성·책임성 핵심. 국회 2025년 통과.",
-          tag:"ai",
-          source:"데일리연합",
-          timeISO: new Date(Date.now()-1000*60*210).toISOString(),
-          url:""
-        },
-        {
-          title:"카카오 AI 서비스 약관 2월 4일부터 개정 적용",
-          summary:"오픈AI 파트너십 기반 챗GPT 연계. 오픈AI 위기설로 국내 영향 우려.",
-          tag:"ai",
-          source:"뉴데일리",
-          timeISO: new Date(Date.now()-1000*60*240).toISOString(),
-          url:""
-        },
-        {
-          title:"중기부 AI 예산 8천억원 투입 본격화",
-          summary:"AI·딥테크 투자, 제조 AX, 스타트업 육성. ICT R&D 1.67조 24.3% 증액.",
-          tag:"ai",
-          source:"정책브리핑",
-          timeISO: new Date(Date.now()-1000*60*270).toISOString(),
-          url:""
-        },
-        {
-          title:"2026 생성형 AI, IT 전략 전환 주도 전망",
-          summary:"전사적 활용·업무 자동화 확산. 에이전트 AI·피지컬 AI 본격 도입 예상.",
-          tag:"ai",
-          source:"CIO Korea",
-          timeISO: new Date(Date.now()-1000*60*300).toISOString(),
-          url:""
-        },
-        // 바이오 (5개)
-        {
-          title:"삼성바이오·셀트리온, 美 공장 인수로 '관세 동맹'",
-          summary:"송도-록빌, 인천-브랜치버그 이원화 생산체계. 글로벌 CDMO 확장 본격화.",
-          tag:"bio",
-          source:"데일리팜",
-          timeISO: new Date(Date.now()-1000*60*330).toISOString(),
-          url:""
-        },
-        {
-          title:"삼성바이오 시총 78조 유지…글로벌 3위",
-          summary:"삼성에피스 분할 후에도 유사 수준. 세계 최대 생산능력 보유.",
-          tag:"bio",
-          source:"더바이오뉴스",
-          timeISO: new Date(Date.now()-1000*60*360).toISOString(),
-          url:""
-        },
-        {
-          title:"셀트리온 시총 43조 달성…제약바이오 2위",
-          summary:"글로벌 6위. 바이오시밀러 11종→10년내 40여종 확대 계획.",
-          tag:"bio",
-          source:"더바이오뉴스",
-          timeISO: new Date(Date.now()-1000*60*390).toISOString(),
-          url:""
-        },
-        {
-          title:"美 생물보안법 발효…K-CDMO 탈중국 수혜 기대",
-          summary:"중국 바이오기업 거래 제한. 글로벌 제약사 공급망 재편 수주 전망.",
-          tag:"bio",
-          source:"더바이오뉴스",
-          timeISO: new Date(Date.now()-1000*60*420).toISOString(),
-          url:""
-        },
-        {
-          title:"2026 바이오 증시 '선택적 반등'…후기 임상 집중",
-          summary:"CDMO 설비 확장 가동. 해외 승인·임상 결과 이벤트 중심 투자.",
-          tag:"bio",
-          source:"바이오타임즈",
-          timeISO: new Date(Date.now()-1000*60*450).toISOString(),
-          url:""
-        },
-        // 자동차 (5개)
-        {
-          title:"설 연휴 무상점검 2월 11~13일…전기차 배터리도",
-          summary:"KAMA 주관. 현대·기아·GM·르노·KG모빌리티 5개사 참여. 고전압 냉각수 점검.",
-          tag:"auto",
-          source:"이코노믹밍글",
-          timeISO: new Date(Date.now()-1000*60*75).toISOString(),
-          url:""
-        },
-        {
-          title:"현대차 아이오닉7, 1회 충전 500km 목표 개발",
-          summary:"2026년 역대급 신차 라인업. 대형 SUV 세그먼트 경쟁력 확보.",
-          tag:"auto",
-          timeISO: new Date(Date.now()-1000*60*105).toISOString(),
-          url:""
-        },
-        {
-          title:"'2026 올해의 차' 시상식 2월 개최",
-          summary:"1월 12일 실차 테스트 완료. 기아 PV5·EV5·EV4, 현대 팰리세이드 경쟁.",
-          tag:"auto",
-          source:"다나와",
-          timeISO: new Date(Date.now()-1000*60*480).toISOString(),
-          url:""
-        },
-        {
-          title:"르노코리아, 2월 한달 최대 1,580만원 혜택",
-          summary:"세닉 E-Tech 자체 보조금 800만원. 정부 보조금 대신 즉시 할인 방식.",
-          tag:"auto",
-          source:"이코노믹밍글",
-          timeISO: new Date(Date.now()-1000*60*510).toISOString(),
-          url:""
-        },
-        {
-          title:"2026년 국내 자동차 판매 169만대 전망",
-          summary:"전년 대비 0.8% 증가. 제네시스 GV90, 기아 셀토스 HEV 등 16종 신차 투입.",
-          tag:"auto",
-          source:"아이뉴스24",
-          timeISO: new Date(Date.now()-1000*60*540).toISOString(),
-          url:""
-        },
-        // 우주항공/방산 (5개)
-        {
-          title:"캐나다 60조 잠수함 사업…국방장관 2월 2일 한화 방문",
-          summary:"스티븐 퓨어 장관 한화오션 거제 현장 시찰. 4일 HD현대 판교 R&D센터도.",
-          tag:"aerospace",
-          source:"아주경제",
-          timeISO: new Date(Date.now()-1000*60*135).toISOString(),
-          url:""
-        },
-        {
-          title:"KDDX 7.8조 사업자 선정…HD현대-한화 경쟁입찰",
-          summary:"2026년 말까지 계약 완료. 2030년까지 이지스 구축함 6척 건조.",
-          tag:"aerospace",
-          source:"SPN서울평양뉴스",
-          timeISO: new Date(Date.now()-1000*60*165).toISOString(),
-          url:""
-        },
-        {
-          title:"HD현대, LNG 2026서 차세대 가스선 공개",
-          summary:"2월 5일까지 카타르 도하. HD한국조선해양·HD현대중공업 참가.",
-          tag:"aerospace",
-          source:"서울신문",
-          timeISO: new Date(Date.now()-1000*60*195).toISOString(),
-          url:""
-        },
-        {
-          title:"우주항공청, 480억 규모 실용화 R&D 착수",
-          summary:"2월 2일 간담회. 2026~2030년 우주기술 사업화·창업 생태계 조성.",
-          tag:"aerospace",
-          source:"정책브리핑",
-          timeISO: new Date(Date.now()-1000*60*225).toISOString(),
-          url:""
-        },
-        {
-          title:"한화 협력사 상생협력 선포식…김경수 위원장 참석",
-          summary:"2월 3일 창원3사업장. 방산·우주항공 국가전략산업 중소기업 동반성장.",
-          tag:"aerospace",
-          source:"오마이뉴스",
-          timeISO: new Date(Date.now()-1000*60*255).toISOString(),
-          url:""
-        },
-        // 금융/은행 (5개)
-        {
-          title:"예금 22조 증시로 이동…한달새 수신 급감",
-          summary:"5대 은행 요구불예금 651조. 12월 대비 30.7조 감소. 증시 자금 유입.",
-          tag:"finance",
-          source:"서울신문",
-          timeISO: new Date(Date.now()-1000*60*285).toISOString(),
-          url:""
-        },
-        {
-          title:"4대 금융 주주환원율 50% 시대…KB 53% 전망",
-          summary:"KB·신한·하나 배당 확대. PBR 1배 돌파 기대. 2025년 순이익 18.3조.",
-          tag:"finance",
-          source:"비즈니스포스트",
-          timeISO: new Date(Date.now()-1000*60*315).toISOString(),
-          url:""
-        },
-        {
-          title:"은행대리업 2분기 도입…우체국서 은행 서비스",
-          summary:"전국 20여개 우체국 KB·신한·우리·하나 대출상품 판매. 금융접근성 개선.",
-          tag:"finance",
-          source:"정책브리핑",
-          timeISO: new Date(Date.now()-1000*60*345).toISOString(),
-          url:""
-        },
-        {
-          title:"은행채 금리 상승…주담대 4.25~6.39% 도달",
-          summary:"1주일새 5년물 3.675→3.715%. 증시 자금 이동으로 수신 압박.",
-          tag:"finance",
-          source:"서울신문",
-          timeISO: new Date(Date.now()-1000*60*375).toISOString(),
-          url:""
-        },
-        {
-          title:"새희망홀씨대출 5조로 확대…금리 9.9~12.5%",
-          summary:"2025년 4조→2026년 5조. 불법대출 피해방지대출 금리 5~6% 인하.",
-          tag:"finance",
-          source:"정책브리핑",
-          timeISO: new Date(Date.now()-1000*60*405).toISOString(),
-          url:""
-        },
-        // 로봇 (5개)
-        {
-          title:"CES 2026, 현대차 차세대 아틀라스 첫 공개",
-          summary:"보스턴다이내믹스 전동식 아틀라스. 2028년 생산현장 투입 구상.",
-          tag:"robot",
-          source:"현대차그룹",
-          timeISO: new Date(Date.now()-1000*60*435).toISOString(),
-          url:""
-        },
-        {
-          title:"HD현대로보틱스, 가반하중 50kg 협동로봇 프로토타입",
-          summary:"AW 2025 공개. 2026년 상반기 출시 예정. 35kg·25kg도 라인업.",
-          tag:"robot",
-          source:"KIDD",
-          timeISO: new Date(Date.now()-1000*60*465).toISOString(),
-          url:""
-        },
-        {
-          title:"현대차그룹, 2026년 키워드 '로보틱스' 경영 본격화",
-          summary:"인류를 위한 진보 비전. AI 로보틱스 생태계 확장 전략 발표.",
-          tag:"robot",
-          source:"서울경제",
-          timeISO: new Date(Date.now()-1000*60*495).toISOString(),
-          url:""
-        },
-        {
-          title:"피지컬 AI 상용화 원년…'일해서 돈 버는 로봇'",
-          summary:"CES 2026 평가 '전시→투입 무대'. 모베드 독립제어 4륜 플랫폼.",
-          tag:"robot",
-          source:"이비엔",
-          timeISO: new Date(Date.now()-1000*60*525).toISOString(),
-          url:""
-        },
-        {
-          title:"HD현대로보틱스, 2030년까지 AI 로봇 솔루션 다변화",
-          summary:"2026년 용접 자동화 조선소 적용. 가공·조립·검사·제조/물류 확대.",
-          tag:"robot",
-          source:"로봇신문",
-          timeISO: new Date(Date.now()-1000*60*555).toISOString(),
-          url:""
-        },
-        // 철강 (5개)
-        {
-          title:"현대제철, 탄소저감강판 세계 첫 양산 2월 3일",
-          summary:"탄소 배출 20% 감소. 하이브리드 전기로·고로 공정. 현대·기아 적용.",
-          tag:"steel",
-          source:"서울신문",
-          timeISO: new Date(Date.now()-1000*60*585).toISOString(),
-          url:""
-        },
-        {
-          title:"철강업계 '안전·탈탄소·AI' 2026년 3대 전략",
-          summary:"글로벌 과잉설비·보호무역 대응. 고부가 전환·저탄소 경쟁력 확보.",
-          tag:"steel",
-          source:"중앙이코노뉴스",
-          timeISO: new Date(Date.now()-1000*60*615).toISOString(),
-          url:""
-        },
-        {
-          title:"포스코, K-스틸법 기반 HyREX 데모 플랜트 진행",
-          summary:"광양 전기로 건설 차질없이. 저탄소 강재 적기 대응 기반 마련.",
-          tag:"steel",
-          source:"페로타임즈",
-          timeISO: new Date(Date.now()-1000*60*645).toISOString(),
-          url:""
-        },
-        {
-          title:"2월 브랜드평판 포스코홀딩스 1위…현대제철 2위",
-          summary:"포스코엠텍 3위. 포스코홀딩스 지수 396만 전월 대비 12.64% 감소.",
-          tag:"steel",
-          source:"공정한뉴스",
-          timeISO: new Date(Date.now()-1000*60*675).toISOString(),
-          url:""
-        },
-        {
-          title:"미국 철강 생산량 26년만에 일본 추월",
-          summary:"트럼프 관세·AI 데이터센터 건설 붐. 보호무역·인프라 투자 쌍끌이.",
-          tag:"steel",
-          source:"글로벌이코노믹",
-          timeISO: new Date(Date.now()-1000*60*705).toISOString(),
-          url:""
-        },
-        // 화학 (5개)
-        {
-          title:"LG화학, 배터리·에너지 포트폴리오 전환 가속",
-          summary:"양극재 내재화·밸류체인 강화. 시노펙과 소듐이온전지 양극·음극재 개발.",
-          tag:"chemical",
-          source:"이코노믹데일리",
-          timeISO: new Date(Date.now()-1000*60*735).toISOString(),
-          url:""
-        },
-        {
-          title:"롯데케미칼 대산공장 110만t 폐쇄…구조조정 본격",
-          summary:"NCC 재편안 제출. HD현대케미칼과 공동 대산산단 감산 계획.",
-          tag:"chemical",
-          source:"매거진한경",
-          timeISO: new Date(Date.now()-1000*60*765).toISOString(),
-          url:""
-        },
-        {
-          title:"롯데화학군 \"2026년, 미래 성장 대전환의 해\"",
-          summary:"이영준 총괄대표 신년사. 글로벌 경쟁력 강화·장기 성장 기반 확보.",
-          tag:"chemical",
-          source:"인더스트리투데이",
-          timeISO: new Date(Date.now()-1000*60*795).toISOString(),
-          url:""
-        },
-        {
-          title:"LG화학, 2026년 상반기 실적 한파 지속 전망",
-          summary:"구조조정·세대교체·재무건전성 개선 동시 추진. 반등 준비 착수.",
-          tag:"chemical",
-          source:"금융경제플러스",
-          timeISO: new Date(Date.now()-1000*60*825).toISOString(),
-          url:""
-        },
-        {
-          title:"1월 화학 브랜드평판 에코프로 1위…LG화학 2위",
-          summary:"포스코퓨처엠 3위, 롯데케미칼 4위. 배터리 소재 업체 상위권.",
-          tag:"chemical",
-          source:"공정한뉴스",
-          timeISO: new Date(Date.now()-1000*60*855).toISOString(),
-          url:""
-        },
-        // 거시경제 (5개)
-        {
-          title:"한은 기준금리 2.5% 5회 연속 동결",
-          summary:"1월 15일 통화정책회의. 완화 사이클 종료 신호. 가계부채·환율 우려.",
-          tag:"macro",
-          source:"토스뱅크",
-          timeISO: new Date(Date.now()-1000*60*885).toISOString(),
-          url:""
-        },
-        {
-          title:"한은 차기 회의 2월 26일…추가 인하 문구 삭제",
-          summary:"금리 인하 고려 문구 제거. 4월 10일, 5월 28일, 7월 16일 일정.",
-          tag:"macro",
-          source:"토스뱅크",
-          timeISO: new Date(Date.now()-1000*60*915).toISOString(),
-          url:""
-        },
-        {
-          title:"2026년 GDP 성장률 1.8% 전망 유지",
-          summary:"KIF 경제전망. 정책 입안자 예측. 경기둔화 우려 속 완만한 회복.",
-          tag:"macro",
-          source:"한국금융연구원",
-          timeISO: new Date(Date.now()-1000*60*945).toISOString(),
-          url:""
-        },
-        {
-          title:"CPI 2.1%, 근원물가 2.0% 전망",
-          summary:"한은 물가 목표 달성 궤도. 헤드라인·근원 모두 2%대 안정화.",
-          tag:"macro",
-          source:"트레이딩이코노믹스",
-          timeISO: new Date(Date.now()-1000*60*975).toISOString(),
-          url:""
-        },
-        {
-          title:"연준, 금리 3.5~3.75% 유지…6월 인하 관측",
-          summary:"1월 FOMC. 시장은 25bp 6월 인하 예상. 고용·소득·소비 동반 둔화 주목.",
-          tag:"macro",
-          source:"Investing.com",
-          timeISO: new Date(Date.now()-1000*60*1005).toISOString(),
-          url:""
-        },
-        // 실적 (5개)
-        {
-          title:"셀레브라이트, 2월 11일 2025 회계연도 4분기 실적 발표",
-          summary:"미 증시 개장 전 공시. 연간 재무 실적 동시 공개.",
-          tag:"earnings",
-          source:"데일리연합",
-          timeISO: new Date(Date.now()-1000*60*1035).toISOString(),
-          url:""
-        },
-        {
-          title:"롯데에너지머티리얼즈, 2월 4일 4분기 실적설명회",
-          summary:"서울 여의도. 국내 기관투자자 대상. 영업 잠정실적·사업 현황.",
-          tag:"earnings",
-          source:"이비엔",
-          timeISO: new Date(Date.now()-1000*60*1065).toISOString(),
-          url:""
-        },
-        {
-          title:"한국타이어, 2월 4일 오후 3시 30분 컨퍼런스콜",
-          summary:"애널리스트·기관투자자 대상 2025년 4분기 실적설명회.",
-          tag:"earnings",
-          source:"이비엔",
-          timeISO: new Date(Date.now()-1000*60*1095).toISOString(),
-          url:""
-        },
-        {
-          title:"포스코인터내셔널, 2월 3일 일본 도쿄 IR",
-          summary:"오후 2시. 해외 기관투자자 대상 2025년 경영실적 발표.",
-          tag:"earnings",
-          source:"이비엔",
-          timeISO: new Date(Date.now()-1000*60*1125).toISOString(),
-          url:""
-        },
-        {
-          title:"LG전자 \"2026년 가전 수요 회복 제한적\" 전망",
-          summary:"컨퍼런스콜. 상반기 점진적 회복, 회복폭은 크지 않을 것. 투트랙·구독 대응.",
-          tag:"earnings",
-          source:"이투데이",
-          timeISO: new Date(Date.now()-1000*60*1155).toISOString(),
-          url:""
-        },
-        // 에너지 (5개)
-        {
-          title:"LNG 공급 2026년 7% 증가…가격 하락 전망",
-          summary:"미국·카타르 대규모 신규 설비. 2026년 말 이후 공급>수요로 전환.",
-          tag:"energy",
-          source:"GS칼텍스",
-          timeISO: new Date(Date.now()-1000*60*1185).toISOString(),
-          url:""
-        },
-        {
-          title:"석유화학 NCC 감산 18~25% 목표 추진",
-          summary:"정부 구조조정 지원. 여수·대산·울산 재편안 제출. 상반기 실행 관건.",
-          tag:"energy",
-          source:"GS칼텍스",
-          timeISO: new Date(Date.now()-1000*60*1215).toISOString(),
-          url:""
-        },
-        {
-          title:"재생에너지 투자 확대…전력망 재편 가속",
-          summary:"AI·반도체 전력 수요 급증. HVDC 케이블 확충·계통 안정화 본격 투자.",
-          tag:"energy",
-          source:"정책브리핑",
-          timeISO: new Date(Date.now()-1000*60*1245).toISOString(),
-          url:""
-        },
-        {
-          title:"햇빛소득마을 2026년 500개 확산…2030년 2,500개",
-          summary:"기후에너지환경부 계획. 2월 중 추진단 출범. 에너지대전환 성과 원년.",
-          tag:"energy",
-          source:"정책브리핑",
-          timeISO: new Date(Date.now()-1000*60*1275).toISOString(),
-          url:""
-        },
-        {
-          title:"정유사 4분기 실적 개선 전망…석유화학은 흐림",
-          summary:"유가 하락에도 마진 방어. 화학 부문은 에틸렌 스프레드 손익분기점 미달.",
-          tag:"energy",
-          source:"KITA",
-          timeISO: new Date(Date.now()-1000*60*1305).toISOString(),
-          url:""
-        }
-      ]
+    // 사건 라벨
+    const EVENT_LABELS = {
+      earnings: '실적',
+      guidance: '가이던스',
+      contract: '수주',
+      regulation: '규제',
+      lawsuit: '소송',
+      recall: '리콜/사고',
+      macro: '매크로',
+      other: '기타',
     };
 
-    // ---------- State ----------
-    let state = structuredClone(sample);
-    let activeFilter = "all";
-    let query = "";
+    // 샘플 이벤트 데이터
+    const now = new Date();
+    const h = (hours) => new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
 
-    // ---------- Renderers ----------
-    function renderHeader(){
-      $("#todayLabel").textContent = `Daily Stock Brief · ${todayKSTLabel()}`;
-      $("#updatedAt").textContent = new Date(state.updatedAtISO).toLocaleString();
-      $("#year").textContent = new Date().getFullYear();
+    const SAMPLE_EVENTS = [
+      {
+        id: 'kr-005930-2026-02-04-hbm-capacity',
+        market: 'kr', ticker: '005930',
+        startedAt: h(2), updatedAt: h(1),
+        type: 'guidance',
+        summary2: ['삼성전자, 2026년 HBM 생산능력 40% 확대 계획 발표.', '엔비디아向 HBM3E 공급 계약 체결 임박 소식.'],
+        why: 'AI 반도체 수요 급증 속 메모리 업황 회복 신호로 해석.',
+        links: [
+          { source: '한국경제', url: 'https://example.com/1', title: '삼성전자, HBM 생산능력 40% 확대', publishedAt: h(2) },
+          { source: '조선비즈', url: 'https://example.com/2', title: '삼성-엔비디아 HBM3E 공급 협상 막바지', publishedAt: h(3) },
+        ]
+      },
+      {
+        id: 'kr-005930-2026-02-03-q4-earnings',
+        market: 'kr', ticker: '005930',
+        startedAt: h(26), updatedAt: h(24),
+        type: 'earnings',
+        summary2: ['삼성전자 2025년 4분기 영업이익 12.3조원, 전년比 +45%.', 'HBM·AI 서버 DRAM 호조로 DS부문 흑자 전환 확정.'],
+        why: '메모리 슈퍼사이클 진입 신호, 업종 전체 re-rating 기대.',
+        links: [
+          { source: '연합뉴스', url: 'https://example.com/3', title: '삼성전자 4분기 영업익 12.3조', publishedAt: h(26) },
+          { source: '매일경제', url: 'https://example.com/4', title: '삼성전자 DS부문 2분기 연속 흑자', publishedAt: h(27) },
+        ]
+      },
+      {
+        id: 'kr-000660-2026-02-04-nvidia-deal',
+        market: 'kr', ticker: '000660',
+        startedAt: h(4), updatedAt: h(2),
+        type: 'contract',
+        summary2: ['SK하이닉스, 엔비디아와 2026년 HBM3E 독점 공급 계약 체결.', '계약 규모 약 15조원, 연간 공급량 전년 대비 2배 증가.'],
+        why: 'AI GPU 시장 지배력 강화, 영업이익률 60% 돌파 전망.',
+        links: [
+          { source: '블룸버그', url: 'https://example.com/5', title: 'SK Hynix Secures $12B NVIDIA HBM Deal', publishedAt: h(4) },
+          { source: '서울경제', url: 'https://example.com/6', title: 'SK하이닉스-엔비디아 15조 계약', publishedAt: h(5) },
+        ]
+      },
+      {
+        id: 'us-TSLA-2026-02-04-recall',
+        market: 'us', ticker: 'TSLA',
+        startedAt: h(6), updatedAt: h(3),
+        type: 'recall',
+        summary2: ['테슬라, 사이버트럭 12만대 자발적 리콜 발표.', '스티어링 시스템 소프트웨어 결함, OTA 업데이트로 해결 예정.'],
+        why: '리콜 규모 대비 주가 영향 제한적 전망, SW 업데이트로 해결 가능.',
+        links: [
+          { source: 'Reuters', url: 'https://example.com/7', title: 'Tesla Recalls 120,000 Cybertrucks', publishedAt: h(6) },
+          { source: 'CNBC', url: 'https://example.com/8', title: 'Tesla Cybertruck Recall: What You Need to Know', publishedAt: h(7) },
+        ]
+      },
+      {
+        id: 'us-TSLA-2026-02-03-q4-delivery',
+        market: 'us', ticker: 'TSLA',
+        startedAt: h(30), updatedAt: h(28),
+        type: 'earnings',
+        summary2: ['테슬라 4분기 인도량 51만대, 시장 예상 48만대 상회.', '연간 인도량 195만대로 역대 최고 기록 경신.'],
+        why: '수요 둔화 우려 해소, 2026년 가이던스 상향 가능성.',
+        links: [
+          { source: 'Bloomberg', url: 'https://example.com/9', title: 'Tesla Q4 Deliveries Beat Estimates', publishedAt: h(30) },
+        ]
+      },
+      {
+        id: 'us-NVDA-2026-02-04-blackwell',
+        market: 'us', ticker: 'NVDA',
+        startedAt: h(8), updatedAt: h(5),
+        type: 'guidance',
+        summary2: ['엔비디아, 블랙웰 GPU 2분기 대량 양산 돌입 확인.', 'MS·아마존·구글 등 빅테크 주문량 전분기 대비 3배 증가.'],
+        why: 'AI 인프라 투자 가속화 수혜, 연간 매출 1,500억 달러 전망.',
+        links: [
+          { source: 'CNBC', url: 'https://example.com/10', title: 'NVIDIA Blackwell Mass Production Begins', publishedAt: h(8) },
+          { source: 'WSJ', url: 'https://example.com/11', title: 'Big Tech Races to Secure NVIDIA GPUs', publishedAt: h(10) },
+        ]
+      },
+      {
+        id: 'us-AAPL-2026-02-03-ai-iphone',
+        market: 'us', ticker: 'AAPL',
+        startedAt: h(36), updatedAt: h(32),
+        type: 'guidance',
+        summary2: ['애플, 아이폰17 프로에 자체 AI 칩 탑재 확정.', '온디바이스 AI 성능 40% 향상, 클라우드 의존도 대폭 감소.'],
+        why: '삼성·구글 대비 AI 경쟁력 강화, 프리미엄 시장 지배력 확대.',
+        links: [
+          { source: 'Apple Insider', url: 'https://example.com/12', title: 'iPhone 17 Pro to Feature Apple AI Chip', publishedAt: h(36) },
+        ]
+      },
+      {
+        id: 'kr-005380-2026-02-04-us-ev',
+        market: 'kr', ticker: '005380',
+        startedAt: h(5), updatedAt: h(3),
+        type: 'contract',
+        summary2: ['현대차, 미국 조지아 공장 EV 생산량 연 40만대로 확대.', 'IRA 보조금 적용 차종 확대, 연간 2.5조원 세액공제 혜택.'],
+        why: '미국 EV 시장 점유율 확대 가속, 2위 도약 가시화.',
+        links: [
+          { source: '한국경제', url: 'https://example.com/13', title: '현대차 조지아공장 증설 확정', publishedAt: h(5) },
+        ]
+      },
+      {
+        id: 'kr-035420-2026-02-04-ai-search',
+        market: 'kr', ticker: '035420',
+        startedAt: h(3), updatedAt: h(1),
+        type: 'other',
+        summary2: ['네이버, AI 검색 큐(Cue:) 월간 사용자 2,000만 돌파.', '기존 검색 대비 체류시간 35% 증가, 광고 수익성 개선 기대.'],
+        why: '생성AI 검색 경쟁에서 국내 시장 선점 효과 가시화.',
+        links: [
+          { source: '조선비즈', url: 'https://example.com/14', title: '네이버 AI 검색 큐: 2천만 사용자 돌파', publishedAt: h(3) },
+        ]
+      },
+      {
+        id: 'us-META-2026-02-03-threads',
+        market: 'us', ticker: 'META',
+        startedAt: h(28), updatedAt: h(26),
+        type: 'earnings',
+        summary2: ['메타, 쓰레드 MAU 5억 돌파로 트위터(X) 추월.', '광고 수익화 본격 시작, 2026년 매출 기여 50억 달러 전망.'],
+        why: '소셜미디어 경쟁 구도 재편, 신규 성장동력 확보.',
+        links: [
+          { source: 'TechCrunch', url: 'https://example.com/15', title: 'Threads Hits 500M Users', publishedAt: h(28) },
+        ]
+      },
+      {
+        id: 'kr-105560-2026-02-04-dividend',
+        market: 'kr', ticker: '105560',
+        startedAt: h(4), updatedAt: h(2),
+        type: 'earnings',
+        summary2: ['KB금융, 2025년 배당금 4,800원 확정, 전년比 +20%.', '주주환원율 53% 달성, 금융지주 중 최고 수준.'],
+        why: '밸류업 프로그램 모범 사례, PBR 1배 돌파 기대.',
+        links: [
+          { source: '매일경제', url: 'https://example.com/16', title: 'KB금융 배당금 4,800원 확정', publishedAt: h(4) },
+        ]
+      },
+      {
+        id: 'us-JPM-2026-02-03-rate-outlook',
+        market: 'us', ticker: 'JPM',
+        startedAt: h(32), updatedAt: h(30),
+        type: 'macro',
+        summary2: ['JP모건, 2026년 연준 금리 인하 3회 전망 유지.', '상반기 동결 후 하반기 75bp 인하 예상.'],
+        why: '글로벌 금리 방향성 판단 참고, 금융주 투자 심리 영향.',
+        links: [
+          { source: 'Bloomberg', url: 'https://example.com/17', title: 'JPMorgan Sees 3 Fed Rate Cuts in 2026', publishedAt: h(32) },
+        ]
+      },
+      {
+        id: 'kr-068270-2026-02-04-fda',
+        market: 'kr', ticker: '068270',
+        startedAt: h(6), updatedAt: h(4),
+        type: 'regulation',
+        summary2: ['셀트리온, FDA 바이오시밀러 신약 승인 획득.', '미국 시장 진출 확대, 연간 매출 1.5조원 추가 기대.'],
+        why: '글로벌 바이오시밀러 시장 점유율 확대 가속.',
+        links: [
+          { source: '뉴스1', url: 'https://example.com/18', title: '셀트리온 FDA 승인 획득', publishedAt: h(6) },
+        ]
+      },
+      {
+        id: 'us-GOOGL-2026-02-04-antitrust',
+        market: 'us', ticker: 'GOOGL',
+        startedAt: h(10), updatedAt: h(8),
+        type: 'lawsuit',
+        summary2: ['구글, 미국 법무부 반독점 소송 1심 패소.', '검색엔진 시장 지배력 남용 인정, 구제책 협의 예정.'],
+        why: '사업 분할 가능성 대두, 규제 리스크 장기화 전망.',
+        links: [
+          { source: 'Reuters', url: 'https://example.com/19', title: 'Google Loses Antitrust Case', publishedAt: h(10) },
+        ]
+      },
+    ];
+
+    // ==================== Utilities ====================
+    function findStock(market, ticker) {
+      return TOP50.find(s => s.market === market && s.ticker === ticker);
     }
 
-    function renderSnapshot(){
-      const el = $("#snapshot");
-      el.innerHTML = "";
-      state.snapshot.forEach(item => {
-        const updown = Number(item.changePct) >= 0 ? "up" : "down";
-        const dotColor = Number(item.changePct) >= 0 ? "rgba(124,255,168,.9)" : "rgba(255,124,124,.9)";
-        const card = document.createElement("div");
-        card.className = "kpi";
-        card.innerHTML = `
-          <div class="name"><span class="dot" style="background:${dotColor}"></span>${item.name}</div>
-          <div class="val">${fmtNum(item.value)}</div>
-          <div class="chg ${updown}">${fmtSigned(item.change)} (${fmtPct(item.changePct)})</div>
+    function getEventsByTicker(market, ticker) {
+      return SAMPLE_EVENTS.filter(e => e.market === market && e.ticker === ticker)
+        .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+    }
+
+    function getTodayTopEvents(limit = 8) {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      return SAMPLE_EVENTS
+        .filter(e => new Date(e.startedAt) > cutoff)
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+        .slice(0, limit);
+    }
+
+    function getEventById(id) {
+      return SAMPLE_EVENTS.find(e => e.id === id);
+    }
+
+    function formatRelTime(iso) {
+      const d = new Date(iso);
+      const now = new Date();
+      const diffMs = now - d;
+      const diffMin = Math.floor(diffMs / 60000);
+      if (diffMin < 1) return '방금';
+      if (diffMin < 60) return `${diffMin}분 전`;
+      const diffH = Math.floor(diffMin / 60);
+      if (diffH < 24) return `${diffH}시간 전`;
+      const diffD = Math.floor(diffH / 24);
+      return `${diffD}일 전`;
+    }
+
+    function formatDateTime(iso) {
+      const d = new Date(iso);
+      return d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+    }
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ==================== SEO ====================
+    function updateMeta(opts) {
+      const { title, description, canonical } = opts;
+      document.title = title;
+      document.querySelector('meta[name="description"]').content = description;
+      document.querySelector('meta[property="og:title"]').content = title;
+      document.querySelector('meta[property="og:description"]').content = description;
+      document.querySelector('meta[name="twitter:title"]').content = title;
+      document.querySelector('meta[name="twitter:description"]').content = description;
+      document.getElementById('canonical').href = canonical || window.location.href;
+    }
+
+    // ==================== Renderers ====================
+    function renderStockGrid(stocks, showBadge = false) {
+      return stocks.map(s => {
+        const events = getEventsByTicker(s.market, s.ticker);
+        const recent = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 24*60*60*1000)).length;
+        return `
+          <a href="/stocks/${s.market}/${s.ticker}" class="stock-item">
+            <div class="stock-ticker">${escapeHtml(s.ticker)}</div>
+            <div class="stock-name">${escapeHtml(s.name_ko)}</div>
+            ${recent > 0 ? `<div class="stock-badge">${recent}건 사건</div>` : ''}
+          </a>
         `;
-        el.appendChild(card);
-      });
-      requestAnimationFrame(setupSnapshotSlider);
+      }).join('');
     }
 
-    function passesFilter(h){
-      if (activeFilter === "all") return true;
-      return (h.tag || "").toLowerCase() === activeFilter;
-    }
+    function renderEventCard(event, showTicker = true) {
+      const stock = findStock(event.market, event.ticker);
+      const stockName = stock ? stock.name_ko : event.ticker;
 
-    function passesQuery(h){
-      if (!query) return true;
-      const t = (h.title + " " + (h.summary||"") + " " + (h.source||"")).toLowerCase();
-      return t.includes(query.toLowerCase());
-    }
-
-    function renderCards(){
-      const el = $("#cards");
-      el.innerHTML = "";
-      const filtered = state.headlines
-        .filter(passesFilter)
-        .filter(passesQuery)
-        .sort((a,b)=> new Date(b.timeISO) - new Date(a.timeISO));
-
-      if (filtered.length === 0){
-        el.classList.remove("scrollable");
-        el.style.maxHeight = "";
-        el.innerHTML = `<div class="small" style="color:var(--muted);padding:8px 2px;">결과가 없어요. 검색어나 필터를 바꿔보세요.</div>`;
-        return;
-      }
-
-      filtered.forEach(h => {
-        const tagLabel = ({
-          macro:"거시경제",
-          earnings:"실적",
-          tech:"테크",
-          energy:"에너지",
-          semiconductor:"반도체",
-          ai:"인공지능",
-          bio:"바이오",
-          auto:"자동차",
-          aerospace:"우주항공/방산",
-          finance:"금융/은행",
-          robot:"로봇",
-          steel:"철강",
-          chemical:"화학"
-        }[h.tag] || (h.tag || "기타"));
-
-        const card = document.createElement("a");
-        card.className = "card";
-        card.href = h.url && h.url.trim() ? h.url.trim() : "javascript:void(0)";
-        card.target = h.url && h.url.trim() ? "_blank" : "_self";
-        card.rel = "noopener";
-
-        card.innerHTML = `
-          <div>
-            <h3>${escapeHtml(h.title)}</h3>
-            <p>${escapeHtml(h.summary || "")}</p>
+      return `
+        <a href="/stocks/${event.market}/${event.ticker}/events/${event.id}" class="event-card">
+          <div class="event-header">
+            ${showTicker ? `
+            <div class="event-ticker-info">
+              <span class="event-ticker">${escapeHtml(event.ticker)}</span>
+              <span class="event-company">${escapeHtml(stockName)}</span>
+            </div>
+            ` : ''}
+            <span class="event-label" data-type="${event.type}">${EVENT_LABELS[event.type] || '기타'}</span>
           </div>
-          <div class="meta">
-            <div class="badge">${tagLabel}</div>
-            <div class="time">${relTime(h.timeISO)}</div>
-            <div class="source">${escapeHtml(h.source || "")}</div>
+          <ul class="event-summary">
+            ${event.summary2.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+          </ul>
+          <div class="event-why">
+            <strong>왜 중요?</strong> ${escapeHtml(event.why)}
           </div>
-        `;
+          <div class="event-links">
+            ${event.links.slice(0, 3).map(link => `
+              <span class="event-link">
+                <span class="event-link-source">${escapeHtml(link.source)}</span>
+                ${escapeHtml(link.title)}
+                <span class="event-link-time">${formatRelTime(link.publishedAt)}</span>
+              </span>
+            `).join('')}
+          </div>
+          <div class="event-time">최종 업데이트: ${formatRelTime(event.updatedAt)}</div>
+        </a>
+      `;
+    }
 
-        el.appendChild(card);
+    // ==================== Pages ====================
+    function renderHomePage(query = {}) {
+      const marketFilter = query.market;
+      let stocks = TOP50;
+      let pageTitle = 'TOP50 종목 사건 아카이브';
+
+      if (marketFilter === 'kr') {
+        stocks = TOP50_KR;
+        pageTitle = '국내 TOP25 종목';
+      } else if (marketFilter === 'us') {
+        stocks = TOP50_US;
+        pageTitle = '미국 TOP25 종목';
+      }
+
+      updateMeta({
+        title: `${pageTitle} | miso_daily`,
+        description: '국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다. 실적, 수주, 규제, 소송 등 투자에 중요한 이슈를 사건 단위로 확인하세요.',
       });
-      requestAnimationFrame(() => updateCardsScroll(filtered.length));
+
+      // Update nav active state
+      document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+      const navKey = marketFilter || 'home';
+      document.querySelector(`[data-nav="${navKey}"]`)?.classList.add('active');
+
+      const topEvents = getTodayTopEvents(8);
+
+      return `
+        <section>
+          <div class="section-header">
+            <div>
+              <h1 class="section-title">오늘의 주요 사건</h1>
+              <div class="section-sub">최근 24시간 내 발생한 주요 이슈</div>
+            </div>
+          </div>
+          <div class="label-filters">
+            <span class="label-pill active" data-label="all">전체</span>
+            ${Object.entries(EVENT_LABELS).map(([k, v]) => `
+              <span class="label-pill" data-label="${k}">${v}</span>
+            `).join('')}
+          </div>
+          <div class="event-cards" id="topEvents">
+            ${topEvents.length > 0
+              ? topEvents.map(e => renderEventCard(e, true)).join('')
+              : '<div class="empty-state"><h2>최근 사건 없음</h2><p>최근 24시간 내 등록된 사건이 없습니다.</p></div>'
+            }
+          </div>
+        </section>
+
+        <section style="margin-top:32px;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">${marketFilter ? pageTitle : 'TOP50 종목'}</h2>
+              <div class="section-sub">${stocks.length}개 종목</div>
+            </div>
+          </div>
+          ${!marketFilter ? `
+          <div class="tabs">
+            <span class="tab active" data-market="">전체</span>
+            <span class="tab" data-market="kr">국내 25</span>
+            <span class="tab" data-market="us">미국 25</span>
+          </div>
+          ` : ''}
+          <div class="stock-grid" id="stockGrid">
+            ${renderStockGrid(stocks, true)}
+          </div>
+        </section>
+      `;
     }
 
-    function escapeHtml(str){
-      return String(str ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
-
-    function parseStooqCsv(csvText){
-      const lines = String(csvText || "").trim().split(/\r?\n/);
-      if (lines.length < 2) throw new Error("stooq csv empty");
-      const rows = lines.slice(1)
-        .map((line) => line.split(","))
-        .filter((cols) => cols.length >= 5 && cols[0] && cols[4]);
-      rows.sort((a,b)=> new Date(a[0]) - new Date(b[0]));
-      if (!rows.length) throw new Error("stooq csv rows missing");
-      return rows;
-    }
-
-    async function fetchStooqDaily(symbol, base){
-      const url = `${base}?s=${encodeURIComponent(symbol)}&i=d`;
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) throw new Error(`stooq fetch ${res.status}`);
-      const text = await res.text();
-      const rows = parseStooqCsv(text);
-      const last = rows[rows.length-1];
-      const prev = rows.length > 1 ? rows[rows.length-2] : null;
-      const lastClose = Number(last[4]);
-      const prevClose = prev ? Number(prev[4]) : lastClose;
-      const change = lastClose - prevClose;
-      const changePct = prevClose ? (change / prevClose) * 100 : 0;
-      return { date: last[0], value: lastClose, change, changePct };
-    }
-
-    async function fetchStooqWithFallback(symbols){
-      const errors = [];
-      for (const source of SNAPSHOT_SOURCES){
-        for (const symbol of symbols){
-          try{
-            const data = await fetchStooqDaily(symbol, source.base);
-            return { data, symbol, source: source.name };
-          }catch(err){
-            errors.push(`${source.name}:${symbol}`);
-          }
-        }
-      }
-      throw new Error("stooq failed: " + errors.join(", "));
-    }
-
-    function parseSheetCsv(csvText){
-      const lines = String(csvText || "").trim().split(/\r?\n/);
-      if (lines.length < 2) throw new Error("sheet csv empty");
-      const header = lines[0].split(",").map((h)=> h.trim().toLowerCase());
-      const idx = {
-        name: header.indexOf("name"),
-        value: header.indexOf("value"),
-        change: header.indexOf("change"),
-        changePct: header.indexOf("changepct"),
-        asOf: header.indexOf("asof")
-      };
-      if (idx.name < 0 || idx.value < 0) throw new Error("sheet csv header missing");
-      return lines.slice(1).map((line)=>{
-        const cols = line.split(",");
-        return {
-          name: cols[idx.name],
-          value: Number(cols[idx.value]),
-          change: idx.change >= 0 ? Number(cols[idx.change]) : null,
-          changePct: idx.changePct >= 0 ? Number(cols[idx.changePct]) : null,
-          asOf: idx.asOf >= 0 ? cols[idx.asOf] : null
-        };
-      }).filter((row)=> row.name);
-    }
-
-    async function fetchSnapshotFromSheet(url){
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) throw new Error(`sheet fetch ${res.status}`);
-      const text = await res.text();
-      return parseSheetCsv(text);
-    }
-
-    async function updateSnapshotFromSources(){
-      // Optional: if a published Google Sheets CSV URL is set, try it first.
-      if (window.SNAPSHOT_SHEET_URL) {
-        try{
-          const sheetSnapshot = await fetchSnapshotFromSheet(window.SNAPSHOT_SHEET_URL);
-          if (sheetSnapshot.length) {
-            applySnapshot(sheetSnapshot, "sheet");
-            return;
-          }
-        }catch(e){
-          console.warn("sheet snapshot failed", e);
-        }
+    function renderStockPage(market, ticker) {
+      const stock = findStock(market, ticker);
+      if (!stock) {
+        return renderNotFound();
       }
 
-      const next = [];
-      for (const item of SNAPSHOT_INDICES){
-        try{
-          const result = await fetchStooqWithFallback(item.symbols);
-          next.push({
-            name: item.name,
-            value: result.data.value,
-            change: result.data.change,
-            changePct: result.data.changePct,
-            asOf: result.data.date,
-            source: result.source,
-            symbol: result.symbol
-          });
-        }catch(e){
-          console.warn("snapshot fetch failed", item.name, e);
-        }
-      }
+      const events = getEventsByTicker(market, ticker);
+      const events24h = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 24*60*60*1000));
+      const events7d = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 7*24*60*60*1000));
 
-      if (next.length !== SNAPSHOT_INDICES.length) {
-        console.warn("snapshot incomplete, keeping previous data");
-        return;
-      }
-
-      applySnapshot(next, "stooq");
-    }
-
-    function applySnapshot(snapshot, sourceLabel){
-      const map = new Map(snapshot.map((s)=> [s.name, s]));
-      state.snapshot = state.snapshot.map((item)=>{
-        const next = map.get(item.name);
-        return next ? { ...item, ...next } : item;
+      updateMeta({
+        title: `${stock.name_ko} (${stock.ticker}) 사건 아카이브 | miso_daily`,
+        description: `${stock.name_ko}의 최근 주요 사건을 확인하세요. 실적, 수주, 규제 등 투자에 중요한 이슈를 사건 단위로 정리합니다.`,
+        canonical: `${window.location.origin}/stocks/${market}/${ticker}`,
       });
-      state.updatedAtISO = new Date().toISOString();
-      renderSnapshot();
-      renderHeader();
-      loadToTextarea();
-      saveSnapshotCache(sourceLabel);
+
+      // Dedupe links
+      const allLinks = events.flatMap(e => e.links);
+      const seenUrls = new Set();
+      const uniqueLinks = allLinks.filter(l => {
+        if (seenUrls.has(l.url)) return false;
+        seenUrls.add(l.url);
+        return true;
+      }).slice(0, 10);
+
+      return `
+        <nav class="breadcrumb">
+          <a href="/top50">홈</a>
+          <span class="breadcrumb-sep">›</span>
+          <a href="/top50?market=${market}">${market === 'kr' ? '국내' : '미국'}</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>${stock.name_ko}</span>
+        </nav>
+
+        <div class="stock-header">
+          <div class="stock-header-main">
+            <h1>${escapeHtml(stock.name_ko)}</h1>
+            <span class="ticker">${escapeHtml(stock.ticker)}</span>
+            <span class="exchange">${escapeHtml(stock.exchange)}</span>
+          </div>
+        </div>
+
+        <section>
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">최근 24시간 사건</h2>
+              <div class="section-sub">${events24h.length}건</div>
+            </div>
+          </div>
+          <div class="event-cards">
+            ${events24h.length > 0
+              ? events24h.slice(0, 5).map(e => renderEventCard(e, false)).join('')
+              : '<div class="empty-state"><p>최근 24시간 내 등록된 사건이 없습니다.</p><a href="/top50" class="related-link">홈으로 돌아가기</a></div>'
+            }
+          </div>
+        </section>
+
+        <section class="timeline-section">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">최근 7일 타임라인</h2>
+              <div class="section-sub">${events7d.length}건</div>
+            </div>
+          </div>
+          <div class="event-cards">
+            ${events7d.length > 0
+              ? events7d.map(e => renderEventCard(e, false)).join('')
+              : '<div class="empty-state"><p>최근 7일 내 등록된 사건이 없습니다.</p></div>'
+            }
+          </div>
+        </section>
+
+        ${uniqueLinks.length > 0 ? `
+        <section class="related-section">
+          <h3 class="related-title">관련 원문 링크</h3>
+          <div class="event-links" style="gap:8px;">
+            ${uniqueLinks.map(l => `
+              <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" class="event-link" style="padding:8px 12px;background:rgba(0,0,0,.2);border-radius:8px;">
+                <span class="event-link-source">${escapeHtml(l.source)}</span>
+                ${escapeHtml(l.title)}
+                <span class="event-link-time">${formatRelTime(l.publishedAt)}</span>
+              </a>
+            `).join('')}
+          </div>
+        </section>
+        ` : ''}
+
+        <section class="related-section">
+          <h3 class="related-title">관련 종목</h3>
+          <div class="related-links">
+            ${(market === 'kr' ? TOP50_KR : TOP50_US)
+              .filter(s => s.ticker !== ticker)
+              .slice(0, 6)
+              .map(s => `<a href="/stocks/${s.market}/${s.ticker}" class="related-link">${escapeHtml(s.name_ko)}</a>`)
+              .join('')}
+          </div>
+        </section>
+      `;
     }
 
-    function saveSnapshotCache(sourceLabel){
-      try{
-        localStorage.setItem(SNAPSHOT_CACHE_KEY, JSON.stringify({
-          updatedAtISO: state.updatedAtISO,
-          snapshot: state.snapshot,
-          source: sourceLabel
-        }));
-      }catch(e){
-        console.warn("snapshot cache save failed", e);
+    function renderEventPage(market, ticker, eventId) {
+      const event = getEventById(eventId);
+      const stock = findStock(market, ticker);
+
+      if (!event || !stock) {
+        return renderNotFound();
       }
+
+      const dateStr = formatDate(event.startedAt);
+      const title = `${stock.name_ko} ${event.summary2[0]} (${dateStr})`;
+
+      updateMeta({
+        title: `${title} | miso_daily`,
+        description: `${event.summary2.join(' ')} ${event.why}`,
+        canonical: `${window.location.origin}/stocks/${market}/${ticker}/events/${eventId}`,
+      });
+
+      // Related events (same ticker, different event)
+      const relatedEvents = getEventsByTicker(market, ticker)
+        .filter(e => e.id !== eventId)
+        .slice(0, 3);
+
+      // Related stocks (same market)
+      const relatedStocks = (market === 'kr' ? TOP50_KR : TOP50_US)
+        .filter(s => s.ticker !== ticker)
+        .slice(0, 5);
+
+      return `
+        <nav class="breadcrumb">
+          <a href="/top50">홈</a>
+          <span class="breadcrumb-sep">›</span>
+          <a href="/top50?market=${market}">${market === 'kr' ? '국내' : '미국'}</a>
+          <span class="breadcrumb-sep">›</span>
+          <a href="/stocks/${market}/${ticker}">${stock.name_ko}</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>사건 상세</span>
+        </nav>
+
+        <article class="event-detail-header">
+          <span class="event-label" data-type="${event.type}" style="margin-bottom:12px;display:inline-block;">
+            ${EVENT_LABELS[event.type] || '기타'}
+          </span>
+          <h1>${event.summary2.map(s => escapeHtml(s)).join('<br>')}</h1>
+          <div class="event-detail-meta">
+            <a href="/stocks/${market}/${ticker}" style="color:var(--accent2);font-weight:600;">
+              ${escapeHtml(stock.ticker)} ${escapeHtml(stock.name_ko)}
+            </a>
+            <span>·</span>
+            <span>${formatDateTime(event.startedAt)}</span>
+            <span>·</span>
+            <span>업데이트: ${formatRelTime(event.updatedAt)}</span>
+          </div>
+        </article>
+
+        <section style="margin-bottom:24px;">
+          <div class="event-why" style="font-size:15px;padding:16px;">
+            <strong>왜 중요한가?</strong><br>
+            ${escapeHtml(event.why)}
+          </div>
+        </section>
+
+        <section>
+          <h2 class="section-title" style="font-size:16px;margin-bottom:12px;">근거 링크</h2>
+          <div class="event-links" style="gap:10px;">
+            ${event.links.map(l => `
+              <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" class="event-link" style="padding:12px 14px;background:rgba(0,0,0,.25);border-radius:10px;border:1px solid var(--line);">
+                <span class="event-link-source">${escapeHtml(l.source)}</span>
+                <span style="flex:1;">${escapeHtml(l.title)}</span>
+                <span class="event-link-time">${formatDateTime(l.publishedAt)}</span>
+              </a>
+            `).join('')}
+          </div>
+        </section>
+
+        ${relatedEvents.length > 0 ? `
+        <section class="related-section">
+          <h3 class="related-title">이 종목의 다른 사건</h3>
+          <div class="event-cards">
+            ${relatedEvents.map(e => renderEventCard(e, false)).join('')}
+          </div>
+        </section>
+        ` : ''}
+
+        <section class="related-section">
+          <h3 class="related-title">관련 종목</h3>
+          <div class="related-links">
+            ${relatedStocks.map(s => `
+              <a href="/stocks/${s.market}/${s.ticker}" class="related-link">${escapeHtml(s.name_ko)}</a>
+            `).join('')}
+          </div>
+        </section>
+      `;
     }
 
-    function loadSnapshotCache(){
-      try{
-        const raw = localStorage.getItem(SNAPSHOT_CACHE_KEY);
-        if (!raw) return;
-        const cached = JSON.parse(raw);
-        if (cached && Array.isArray(cached.snapshot)) {
-          state.snapshot = cached.snapshot;
-          if (cached.updatedAtISO) state.updatedAtISO = cached.updatedAtISO;
-        }
-      }catch(e){
-        console.warn("snapshot cache load failed", e);
+    function renderNotFound() {
+      updateMeta({
+        title: '페이지를 찾을 수 없습니다 | miso_daily',
+        description: '요청하신 페이지를 찾을 수 없습니다.',
+      });
+
+      return `
+        <div class="empty-state">
+          <h2>페이지를 찾을 수 없습니다</h2>
+          <p>요청하신 페이지가 존재하지 않거나 삭제되었습니다.</p>
+          <a href="/top50" class="related-link" style="display:inline-block;margin-top:16px;">홈으로 돌아가기</a>
+        </div>
+      `;
+    }
+
+    // ==================== Router ====================
+    const app = document.getElementById('app');
+
+    function parseRoute() {
+      const path = window.location.pathname;
+      const query = Object.fromEntries(new URLSearchParams(window.location.search));
+
+      // /top50 or /
+      if (path === '/top50' || path === '/' || path === '') {
+        return { page: 'home', query };
       }
-    }
 
-    function setupSnapshotSlider(){
-      const scroller = $("#snapshot");
-      const prev = $("#snapPrev");
-      const next = $("#snapNext");
-      const useSlider = state.snapshot.length >= 4;
-
-      scroller.classList.toggle("snap--slider", useSlider);
-
-      if (!useSlider){
-        prev.classList.add("hidden");
-        next.classList.add("hidden");
-        scroller.scrollLeft = 0;
-        return;
+      // /stocks/:market/:ticker/events/:eventId
+      const eventMatch = path.match(/^\/stocks\/([^/]+)\/([^/]+)\/events\/(.+)$/);
+      if (eventMatch) {
+        return { page: 'event', market: eventMatch[1], ticker: eventMatch[2], eventId: eventMatch[3] };
       }
 
-      if (!scroller.dataset.bound){
-        scroller.addEventListener("scroll", () => updateSnapshotNav(), { passive: true });
-        scroller.dataset.bound = "1";
+      // /stocks/:market/:ticker
+      const stockMatch = path.match(/^\/stocks\/([^/]+)\/([^/]+)$/);
+      if (stockMatch) {
+        return { page: 'stock', market: stockMatch[1], ticker: stockMatch[2] };
       }
 
-      updateSnapshotNav();
+      return { page: '404' };
     }
 
-    function updateSnapshotNav(){
-      const scroller = $("#snapshot");
-      const prev = $("#snapPrev");
-      const next = $("#snapNext");
-      const max = scroller.scrollWidth - scroller.clientWidth - 2;
-      prev.classList.toggle("hidden", scroller.scrollLeft <= 2);
-      next.classList.toggle("hidden", scroller.scrollLeft >= max);
-    }
+    function render() {
+      const route = parseRoute();
 
-    function updateCardsScroll(filteredCount){
-      const el = $("#cards");
-      el.classList.remove("scrollable");
-      el.style.maxHeight = "";
-
-      if (activeFilter !== "all" || filteredCount <= 5) return;
-
-      const cards = Array.from(el.children).filter((c) => c.classList.contains("card"));
-      if (cards.length < 5) return;
-
-      const gap = parseFloat(getComputedStyle(el).gap || "0");
-      let height = 0;
-      for (let i = 0; i < 5; i++){
-        height += cards[i].offsetHeight;
+      switch (route.page) {
+        case 'home':
+          app.innerHTML = renderHomePage(route.query);
+          bindHomeEvents();
+          break;
+        case 'stock':
+          app.innerHTML = renderStockPage(route.market, route.ticker);
+          break;
+        case 'event':
+          app.innerHTML = renderEventPage(route.market, route.ticker, route.eventId);
+          break;
+        default:
+          app.innerHTML = renderNotFound();
       }
-      height += gap * 4;
 
-      el.style.maxHeight = height + "px";
-      el.classList.add("scrollable");
+      window.scrollTo(0, 0);
     }
 
-    // ---------- Digest ----------
-    function buildDigest(compact=false){
-      // 1) 전체 흐름 3줄 + 용어 1개 + 결론
-      const top = [...state.headlines]
-        .sort((a,b)=> new Date(b.timeISO) - new Date(a.timeISO))
-        .slice(0,3);
-
-      const flow = [
-        "한은 기준금리 동결로 완화 사이클 종료 신호.",
-        "반도체·AI 투자 확대로 산업 재편 가속화.",
-        "실적 시즌 본격화, 선택적 반등 국면 진입."
-      ];
-
-      // 아주 단순한 용어(필요시 커스터마이즈)
-      const term = {
-        word: "HBM(High Bandwidth Memory)",
-        meaning: "초고대역폭 메모리, AI 서버 핵심 부품",
-        why: "AI 추론 시장 확대로 수요 급증, 반도체 업황 핵심 지표"
-      };
-
-      const head = `📌  오늘의  miso_daily 헤드라인 (${todayKSTLabel()}) 📅`;
-      const lines = [];
-      lines.push(head);
-      lines.push("");
-      lines.push("🧠 쉽게 요약하기");
-      flow.forEach(s => lines.push(`- ${s}`));
-      lines.push("");
-      lines.push("📚 경제 용어 1개");
-      lines.push(`- 용어: ${term.word}`);
-      lines.push(`- 뜻: ${term.meaning}`);
-      lines.push(`- 왜 중요?: ${term.why}`);
-      lines.push("");
-      lines.push("✅ 결론");
-      lines.push("- 금리 동결 속 산업별 구조조정 본격화. AI·반도체 중심 선택적 투자 국면.");
-
-      if (!compact){
-        lines.push("");
-        lines.push("🗞 주요 기사 3개");
-        top.forEach((h,i)=> {
-          const one = `${i+1}) ${h.title}`;
-          lines.push(`- ${trimTo(one, 38)}`);
-        });
+    function navigate(href, replace = false) {
+      if (replace) {
+        window.history.replaceState({}, '', href);
       } else {
-        // 더 짧게: 핵심만
-        const mini = [
-          "한은 기준금리 2.5% 동결 유지",
-          "반도체 1,880억弗·AI 8천억 투자",
-          "실적시즌 본격화, 선택적 반등"
-        ];
-        return mini.map(s => `- ${s}`).join("\n");
+        window.history.pushState({}, '', href);
       }
-
-      return lines.join("\n");
+      render();
     }
 
-    function trimTo(s, max){
-      s = String(s);
-      if (s.length <= max) return s;
-      return s.slice(0, max-1) + "…";
-    }
-
-    // ---------- JSON Handling ----------
-    function loadToTextarea(){
-      $("#jsonInput").value = JSON.stringify(state, null, 2);
-    }
-
-    function applyFromTextarea(){
-      try{
-        const obj = JSON.parse($("#jsonInput").value);
-        // minimal validation
-        if (!obj.snapshot || !Array.isArray(obj.snapshot)) throw new Error("snapshot 배열이 필요합니다.");
-        if (!obj.headlines || !Array.isArray(obj.headlines)) throw new Error("headlines 배열이 필요합니다.");
-
-        obj.updatedAtISO = obj.updatedAtISO || new Date().toISOString();
-        state = obj;
-
-        renderAll();
-        toast("적용 완료");
-      }catch(e){
-        toast("JSON 오류: " + (e.message || "형식을 확인하세요"));
-      }
-    }
-
-    function renderAll(){
-      renderHeader();
-      renderSnapshot();
-      renderCards();
-      $("#digest").value = buildDigest(false);
-    }
-
-    function startLiveRefresh(){
-      setInterval(() => {
-        renderHeader();
-        renderCards();
-      }, 60000);
-    }
-
-    // ---------- Events ----------
-    function bind(){
-      // filter pills
-      $$(".pill").forEach(p => {
-        p.addEventListener("click", () => {
-          $$(".pill").forEach(x => x.classList.remove("active"));
-          p.classList.add("active");
-          activeFilter = p.dataset.filter;
-          renderCards();
+    function bindHomeEvents() {
+      // Tab clicks
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const market = tab.dataset.market;
+          const url = market ? `/top50?market=${market}` : '/top50';
+          navigate(url);
         });
       });
 
-      $("#q").addEventListener("input", (e)=> {
-        query = e.target.value.trim();
-        renderCards();
-      });
+      // Label filter clicks
+      let activeLabel = 'all';
+      document.querySelectorAll('.label-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('.label-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          activeLabel = pill.dataset.label;
 
-      $("#btnApply").addEventListener("click", applyFromTextarea);
-      $("#btnFormat").addEventListener("click", ()=>{
-        try{
-          const obj = JSON.parse($("#jsonInput").value);
-          $("#jsonInput").value = JSON.stringify(obj, null, 2);
-          toast("정리 완료");
-        }catch{
-          toast("JSON 오류");
-        }
-      });
+          const topEvents = getTodayTopEvents(20);
+          const filtered = activeLabel === 'all'
+            ? topEvents.slice(0, 8)
+            : topEvents.filter(e => e.type === activeLabel).slice(0, 8);
 
-      $("#btnCopyJson").addEventListener("click", async ()=>{
-        await navigator.clipboard.writeText($("#jsonInput").value);
-        toast("JSON 복사 완료");
-      });
-
-      $("#btnCopyDigest").addEventListener("click", async ()=>{
-        await navigator.clipboard.writeText($("#digest").value);
-        toast("브리핑 복사 완료");
-      });
-      $("#btnCopyDigest2").addEventListener("click", async ()=>{
-        await navigator.clipboard.writeText($("#digest").value);
-        toast("브리핑 복사 완료");
-      });
-
-      $("#btnShorten").addEventListener("click", ()=>{
-        $("#digest").value = buildDigest(true);
-        toast("짧게 만들었어요");
-      });
-
-      $("#btnReset").addEventListener("click", ()=>{
-        state = structuredClone(sample);
-        loadToTextarea();
-        renderAll();
-        toast("샘플 로드 완료");
-      });
-
-      $("#snapPrev").addEventListener("click", ()=>{
-        const scroller = $("#snapshot");
-        scroller.scrollBy({ left: -scroller.clientWidth, behavior: "smooth" });
-      });
-      $("#snapNext").addEventListener("click", ()=>{
-        const scroller = $("#snapshot");
-        scroller.scrollBy({ left: scroller.clientWidth, behavior: "smooth" });
+          const container = document.getElementById('topEvents');
+          if (filtered.length > 0) {
+            container.innerHTML = filtered.map(e => renderEventCard(e, true)).join('');
+          } else {
+            container.innerHTML = '<div class="empty-state"><h2>해당 라벨의 사건 없음</h2><p>최근 24시간 내 해당 라벨의 사건이 없습니다.</p></div>';
+          }
+        });
       });
     }
 
-    // ---------- Firebase Integration ----------
-    let db = null;
-    let unsubscribe = null;
+    // ==================== Link Interception ====================
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a[href]');
+      if (!link) return;
 
-    function initFirebase(){
-      try {
-        // Firebase 초기화 (이미 설정된 경우 스킵)
-        if (!firebase.apps.length && window.FIREBASE_CONFIG) {
-          firebase.initializeApp(window.FIREBASE_CONFIG);
-          db = firebase.firestore();
-          console.log("Firebase initialized");
+      const href = link.getAttribute('href');
 
-          // Firestore 실시간 리스너 설정
-          unsubscribe = db.collection('news').doc('latest')
-            .onSnapshot((doc) => {
-              if (doc.exists) {
-                const data = doc.data();
-                console.log("Real-time news update received:", new Date().toISOString());
-
-                // state 업데이트
-                state = {
-                  updatedAtISO: data.updatedAtISO || new Date().toISOString(),
-                  snapshot: data.snapshot || state.snapshot,
-                  headlines: data.headlines || state.headlines
-                };
-
-                // UI 업데이트
-                renderAll();
-                loadToTextarea();
-                toast("뉴스가 자동 업데이트되었습니다 🔄");
-              }
-            }, (error) => {
-              console.error("Firestore listener error:", error);
-            });
-        } else {
-          console.log("Firebase already initialized or config missing");
-        }
-      } catch (error) {
-        console.error("Firebase initialization error:", error);
-        // Firebase 연결 실패시 로컬 샘플 데이터 사용
-        console.log("Using local sample data");
+      // Skip external links, new tabs, special links
+      if (
+        link.target === '_blank' ||
+        link.hasAttribute('download') ||
+        href.startsWith('http') ||
+        href.startsWith('//') ||
+        href.startsWith('#') ||
+        href.startsWith('mailto:') ||
+        e.ctrlKey || e.metaKey || e.shiftKey
+      ) {
+        return;
       }
+
+      e.preventDefault();
+      navigate(href);
+    });
+
+    // ==================== Init ====================
+    window.addEventListener('popstate', render);
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Redirect root to /top50
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+      navigate('/top50', true);
+    } else {
+      render();
     }
-
-    // ---------- Init ----------
-      (function init(){
-      state.updatedAtISO = new Date().toISOString();
-      loadToTextarea();
-      bind();
-      renderAll();
-      loadSnapshotCache();
-      renderAll();
-      updateSnapshotFromSources();
-      setInterval(updateSnapshotFromSources, SNAPSHOT_REFRESH_MS);
-      startLiveRefresh();
-
-      // Firebase 실시간 업데이트 활성화
-      initFirebase();
-    })();
   </script>
 </body>
 </html>
