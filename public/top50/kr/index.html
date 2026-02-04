@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>국내 TOP25 종목 사건 아카이브 | miso_daily</title>
+  <meta name="description" content="국내 TOP25 종목의 주요 사건을 사건 단위로 정리합니다. 실적, 규제, 수주 등 핵심 이슈를 빠르게 확인하세요." />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="miso_daily" />
+  <meta property="og:title" content="국내 TOP25 종목 사건 아카이브 | miso_daily" />
+  <meta property="og:description" content="국내 TOP25 종목의 주요 사건을 사건 단위로 정리합니다. 실적, 규제, 수주 등 핵심 이슈를 빠르게 확인하세요." />
+  <meta property="og:url" content="https://misodaily.web.app/top50/kr/" />
+  <meta property="og:image" content="https://misodaily.web.app/og.png" />
+  <meta property="og:locale" content="ko_KR" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="국내 TOP25 종목 사건 아카이브 | miso_daily" />
+  <meta name="twitter:description" content="국내 TOP25 종목의 주요 사건을 사건 단위로 정리합니다. 실적, 규제, 수주 등 핵심 이슈를 빠르게 확인하세요." />
+  <meta name="twitter:image" content="https://misodaily.web.app/og.png" />
+
+  <link rel="canonical" href="https://misodaily.web.app/top50/kr/" />
+
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --panel: #121622;
+      --panel2: #0f1320;
+      --text: #e9edf6;
+      --muted: #a9b3c7;
+      --line: rgba(255,255,255,.08);
+      --accent: #ff6a00;
+      --accent2: #ff8a3d;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100vh; }
+    body {
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(255,106,0,.18), transparent 60%),
+        radial-gradient(900px 600px at 95% 10%, rgba(255,138,61,.10), transparent 55%),
+        linear-gradient(180deg, #07080c 0%, var(--bg) 40%, #07080c 100%);
+      letter-spacing: -0.2px;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: rgba(18,22,34,.72);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 14px;
+      z-index: 100;
+      margin-bottom: 20px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: opacity .2s ease-in-out;
+    }
+    .brand:hover { opacity: .9; }
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #ff7e29 0%, #ff6a00 100%);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 8px 16px rgba(255,106,0,.25);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+    .brand-text strong {
+      font-size: 18px;
+      font-weight: 700;
+      display: block;
+      background: linear-gradient(45deg, #fff 20%, #ffb07a 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -.5px;
+    }
+    .brand-text strong .underscore {
+      color: var(--accent);
+      -webkit-text-fill-color: var(--accent);
+    }
+    .brand-text span { font-size: 12px; color: var(--muted); }
+
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-link {
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      transition: .15s;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: rgba(255,106,0,.15);
+      border-color: rgba(255,106,0,.4);
+      text-decoration: none;
+    }
+
+    /* Timezone notice */
+    .tz-notice {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+      margin-bottom: 16px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      cursor: pointer;
+      transition: .15s;
+    }
+    .tab:hover, .tab.active {
+      background: rgba(255,106,0,.15);
+      border-color: rgba(255,106,0,.4);
+      text-decoration: none;
+    }
+
+    /* Search */
+    .search-box {
+      margin-bottom: 12px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      font-size: 14px;
+    }
+    .search-box input::placeholder { color: rgba(255,255,255,.45); }
+
+    /* Period toggle */
+    .period-toggle {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .period-btn {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      color: var(--text);
+      cursor: pointer;
+      transition: .15s;
+    }
+    .period-btn:hover, .period-btn.active {
+      background: rgba(255,106,0,.2);
+      border-color: rgba(255,106,0,.5);
+    }
+
+    /* Event Labels Filter */
+    .label-filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .label-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      cursor: pointer;
+      transition: .15s;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .label-pill:hover, .label-pill.active {
+      background: rgba(255,106,0,.15);
+      border-color: rgba(255,106,0,.4);
+    }
+    .pill-count {
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      font-size: 10px;
+    }
+
+    /* Section headers */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .section-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Stock Grid */
+    .stock-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .stock-item {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 14px;
+      border-radius: 14px;
+      transition: .15s;
+      min-height: 130px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+    .stock-item:hover {
+      border-color: rgba(255,106,0,.4);
+      box-shadow: 0 8px 18px rgba(0,0,0,.2);
+      text-decoration: none;
+    }
+    .stock-ticker { font-size: 15px; font-weight: 700; }
+    .stock-name { font-size: 13px; color: var(--text); }
+    .stock-name-en { font-size: 11px; color: var(--muted); }
+    .stock-badge {
+      margin-top: auto;
+      font-size: 11px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--line);
+      display: inline-block;
+      width: fit-content;
+    }
+    .stock-badge.hot {
+      background: rgba(255,106,0,.2);
+      border-color: rgba(255,106,0,.4);
+      color: #ffb07a;
+    }
+
+    /* Event cards */
+    .event-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .event-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 16px;
+      border-radius: var(--radius2);
+      transition: .15s;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .event-card:hover {
+      border-color: rgba(255,106,0,.4);
+      box-shadow: 0 8px 18px rgba(0,0,0,.2);
+      text-decoration: none;
+    }
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .event-ticker-info { display: flex; flex-direction: column; gap: 4px; }
+    .event-ticker { font-size: 13px; font-weight: 700; }
+    .event-company { font-size: 12px; color: var(--muted); }
+    .event-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .event-label {
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--line);
+      display: inline-flex;
+      align-items: center;
+    }
+    .confidence-badge {
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-weight: 700;
+    }
+    .event-summary {
+      list-style: disc;
+      padding-left: 16px;
+      font-size: 13px;
+      display: grid;
+      gap: 6px;
+    }
+    .event-why {
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,106,0,.12);
+      border: 1px solid rgba(255,106,0,.25);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    .event-links {
+      display: grid;
+      gap: 8px;
+    }
+    .event-link {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--line);
+      display: grid;
+      gap: 4px;
+    }
+    .event-link:hover { border-color: rgba(255,106,0,.4); text-decoration: none; }
+    .event-link-source { font-size: 10px; color: var(--muted); }
+    .event-link-title { font-size: 12px; }
+    .event-link-time { font-size: 10px; color: var(--muted); }
+    .event-meta-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .event-bundle {
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px dashed rgba(255,255,255,.12);
+    }
+
+    /* Stock detail */
+    .stock-header {
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius2);
+      margin-bottom: 16px;
+    }
+    .stock-header-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stock-header-main h1 {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .stock-header-main .ticker {
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--line);
+    }
+    .stock-header-main .exchange { font-size: 12px; color: var(--muted); }
+    .stock-header-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    /* Event detail */
+    .event-detail-header {
+      padding: 18px;
+      border-radius: var(--radius2);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      margin-bottom: 18px;
+    }
+    .event-detail-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .event-detail-meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .event-detail-stock { color: var(--accent2); font-weight: 600; }
+    .meta-sep { opacity: .6; }
+    .event-detail-why {
+      padding: 18px;
+      border-radius: var(--radius2);
+      background: rgba(255,106,0,.12);
+      border: 1px solid rgba(255,106,0,.25);
+      margin-bottom: 18px;
+    }
+    .event-detail-why h2 { font-size: 16px; margin-bottom: 8px; }
+    .event-detail-sources h2 { font-size: 16px; margin-bottom: 10px; }
+
+    /* Related */
+    .related-section { margin-top: 24px; }
+    .related-title { font-size: 15px; margin-bottom: 10px; }
+    .related-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .related-link {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      font-size: 12px;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .breadcrumb a { color: var(--accent2); }
+    .breadcrumb a:hover { color: var(--text); }
+    .breadcrumb-sep { opacity: .5; }
+
+    /* Footer */
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    footer .accent { color: var(--accent2); font-weight: 700; }
+
+    /* Empty state */
+    .empty-state {
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px dashed var(--line);
+      background: rgba(255,255,255,.02);
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty-state h2 { font-size: 16px; margin-bottom: 6px; color: var(--text); }
+
+    /* Utility */
+    .is-hidden { display: none !important; }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .header { flex-direction: column; gap: 12px; }
+      .nav-links { width: 100%; justify-content: center; }
+      .stock-grid { grid-template-columns: repeat(2, 1fr); }
+      .event-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <a href="/top50/" class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 18V6C4 5.44772 4.44772 5 5 5H9C9.55228 5 10 5.44772 10 6V18C10 18.5523 9.55228 19 9 19H5C4.44772 19 4 18.5523 4 18Z" fill="rgba(255,255,255,0.9)"/>
+            <path d="M14 18V10C14 9.44772 14.4477 9 15 9H19C19.5523 9 20 9.44772 20 10V18C20 18.5523 19.5523 19 19 19H15C14.4477 19 14 18.5523 14 18Z" fill="rgba(255,255,255,0.9)"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <strong>miso<span class="underscore">_</span>daily</strong>
+          <span>TOP50 사건 아카이브</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="/top50/" class="nav-link " data-nav="home">홈</a>
+        <a href="/top50/kr/" class="nav-link active" data-nav="kr">국내 25</a>
+        <a href="/top50/us/" class="nav-link " data-nav="us">미국 25</a>
+      </nav>
+    </header>
+
+    <div class="tz-notice">
+      기준 시각: Asia/Seoul (KST) · 출처 링크 클릭시 원문으로 이동
+    </div>
+
+    <main id="app">
+      
+    <section>
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">오늘의 주요 사건</h1>
+          <div class="section-sub">최근 발생한 주요 이슈</div>
+        </div>
+      <div class="period-toggle" data-target="topEvents" data-scope="home">
+        <button class="period-btn active" data-hours="24">24h</button>
+        <button class="period-btn" data-hours="168">7d</button>
+        <button class="period-btn" data-hours="720">30d</button>
+      </div>
+    </div>
+
+      <div class="search-box">
+        <input type="text" id="stockSearch" placeholder="티커 또는 회사명 검색 (예: 삼성전자, AAPL, Apple)" autocomplete="off" />
+      </div>
+
+      
+    <div class="label-filters">
+      <span class="label-pill active" data-label="all">전체 <span class="pill-count">9</span></span>
+      <span class="label-pill " data-label="earnings">실적 <span class="pill-count">1</span></span><span class="label-pill " data-label="guidance">가이던스 <span class="pill-count">2</span></span><span class="label-pill " data-label="contract">수주 <span class="pill-count">2</span></span><span class="label-pill " data-label="regulation">규제 <span class="pill-count">1</span></span><span class="label-pill " data-label="lawsuit">소송 <span class="pill-count">1</span></span><span class="label-pill " data-label="recall">리콜/사고 <span class="pill-count">1</span></span><span class="label-pill " data-label="macro">매크로 <span class="pill-count">0</span></span><span class="label-pill " data-label="other">기타 <span class="pill-count">1</span></span>
+    </div>
+  
+
+      <div class="event-cards" id="topEvents">
+        <a href="/stocks/kr/005930/events/kr-005930-2026-02-04-hbm-capacity/" class="event-card" data-type="guidance" data-started-at="2026-02-04T04:00:00.000Z" data-updated-at="2026-02-04T05:00:00.000Z" data-market="kr" data-ticker="005930" data-confidence="reported">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">005930</span>
+        <span class="event-company">삼성전자</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#2196f322;border-color:#2196f355;color:#2196f3">보도</span>
+        <span class="event-label" data-type="guidance">가이던스</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>삼성전자, 2026년 HBM 생산능력 40% 확대 계획 발표.</li><li>엔비디아向 HBM3E 공급 계약 체결 임박 소식.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> AI 반도체 수요 급증 속 메모리 업황 회복 신호로 해석.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.hankyung.com/example/1" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">한국경제</span>
+          <span class="event-link-title">삼성전자, HBM 생산능력 40% 확대</span>
+          <span class="event-link-time">2시간 전</span>
+        </a>
+      
+        <a href="https://biz.chosun.com/example/2" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">조선비즈</span>
+          <span class="event-link-title">삼성-엔비디아 HBM3E 공급 협상 막바지</span>
+          <span class="event-link-time">3시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 2시간 전</span>
+      <span class="event-time">업데이트: 1시간 전</span>
+      <span class="event-bundle">동일 이슈 2건 묶음</span>
+    </div>
+  </a><a href="/stocks/kr/035420/events/kr-035420-2026-02-04-ai-search/" class="event-card" data-type="other" data-started-at="2026-02-04T03:00:00.000Z" data-updated-at="2026-02-04T05:00:00.000Z" data-market="kr" data-ticker="035420" data-confidence="reported">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">035420</span>
+        <span class="event-company">NAVER</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#2196f322;border-color:#2196f355;color:#2196f3">보도</span>
+        <span class="event-label" data-type="other">기타</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>네이버, AI 검색 큐(Cue:) 월간 사용자 2,000만 돌파.</li><li>기존 검색 대비 체류시간 35% 증가, 광고 수익성 개선 기대.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 생성AI 검색 경쟁에서 국내 시장 선점 효과 가시화.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://biz.chosun.com/example/14" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">조선비즈</span>
+          <span class="event-link-title">네이버 AI 검색 큐: 2천만 사용자 돌파</span>
+          <span class="event-link-time">3시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 3시간 전</span>
+      <span class="event-time">업데이트: 1시간 전</span>
+      
+    </div>
+  </a><a href="/stocks/kr/000660/events/kr-000660-2026-02-04-nvidia-deal/" class="event-card" data-type="contract" data-started-at="2026-02-04T02:00:00.000Z" data-updated-at="2026-02-04T04:00:00.000Z" data-market="kr" data-ticker="000660" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">000660</span>
+        <span class="event-company">SK하이닉스</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="contract">수주</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>SK하이닉스, 엔비디아와 2026년 HBM3E 독점 공급 계약 체결.</li><li>계약 규모 약 15조원, 연간 공급량 전년 대비 2배 증가.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> AI GPU 시장 지배력 강화, 영업이익률 60% 돌파 전망.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.bloomberg.com/example/5" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">블룸버그</span>
+          <span class="event-link-title">SK Hynix Secures $12B NVIDIA HBM Deal</span>
+          <span class="event-link-time">4시간 전</span>
+        </a>
+      
+        <a href="https://www.sedaily.com/example/6" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">서울경제</span>
+          <span class="event-link-title">SK하이닉스-엔비디아 15조 계약</span>
+          <span class="event-link-time">5시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 4시간 전</span>
+      <span class="event-time">업데이트: 2시간 전</span>
+      <span class="event-bundle">동일 이슈 2건 묶음</span>
+    </div>
+  </a><a href="/stocks/kr/105560/events/kr-105560-2026-02-04-dividend/" class="event-card" data-type="earnings" data-started-at="2026-02-04T02:00:00.000Z" data-updated-at="2026-02-04T04:00:00.000Z" data-market="kr" data-ticker="105560" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">105560</span>
+        <span class="event-company">KB금융</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="earnings">실적</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>KB금융, 2025년 배당금 4,800원 확정, 전년比 +20%.</li><li>주주환원율 53% 달성, 금융지주 중 최고 수준.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 밸류업 프로그램 모범 사례, PBR 1배 돌파 기대.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.mk.co.kr/example/16" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">매일경제</span>
+          <span class="event-link-title">KB금융 배당금 4,800원 확정</span>
+          <span class="event-link-time">4시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 4시간 전</span>
+      <span class="event-time">업데이트: 2시간 전</span>
+      
+    </div>
+  </a><a href="/stocks/us/TSLA/events/us-TSLA-2026-02-04-recall/" class="event-card" data-type="recall" data-started-at="2026-02-04T00:00:00.000Z" data-updated-at="2026-02-04T03:00:00.000Z" data-market="us" data-ticker="TSLA" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">TSLA</span>
+        <span class="event-company">테슬라</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="recall">리콜/사고</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>테슬라, 사이버트럭 12만대 자발적 리콜 발표.</li><li>스티어링 시스템 소프트웨어 결함, OTA 업데이트로 해결 예정.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 리콜 규모 대비 주가 영향 제한적 전망, SW 업데이트로 해결 가능.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.reuters.com/example/7" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">Reuters</span>
+          <span class="event-link-title">Tesla Recalls 120,000 Cybertrucks</span>
+          <span class="event-link-time">6시간 전</span>
+        </a>
+      
+        <a href="https://www.cnbc.com/example/8" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">CNBC</span>
+          <span class="event-link-title">Tesla Cybertruck Recall: What You Need to Know</span>
+          <span class="event-link-time">7시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 6시간 전</span>
+      <span class="event-time">업데이트: 3시간 전</span>
+      <span class="event-bundle">동일 이슈 2건 묶음</span>
+    </div>
+  </a><a href="/stocks/kr/005380/events/kr-005380-2026-02-04-us-ev/" class="event-card" data-type="contract" data-started-at="2026-02-04T01:00:00.000Z" data-updated-at="2026-02-04T03:00:00.000Z" data-market="kr" data-ticker="005380" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">005380</span>
+        <span class="event-company">현대차</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="contract">수주</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>현대차, 미국 조지아 공장 EV 생산량 연 40만대로 확대.</li><li>IRA 보조금 적용 차종 확대, 연간 2.5조원 세액공제 혜택.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 미국 EV 시장 점유율 확대 가속, 2위 도약 가시화.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.hankyung.com/example/13" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">한국경제</span>
+          <span class="event-link-title">현대차 조지아공장 증설 확정</span>
+          <span class="event-link-time">5시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 5시간 전</span>
+      <span class="event-time">업데이트: 3시간 전</span>
+      
+    </div>
+  </a><a href="/stocks/kr/068270/events/kr-068270-2026-02-04-fda/" class="event-card" data-type="regulation" data-started-at="2026-02-04T00:00:00.000Z" data-updated-at="2026-02-04T02:00:00.000Z" data-market="kr" data-ticker="068270" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">068270</span>
+        <span class="event-company">셀트리온</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="regulation">규제</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>셀트리온, FDA 바이오시밀러 신약 승인 획득.</li><li>미국 시장 진출 확대, 연간 매출 1.5조원 추가 기대.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 글로벌 바이오시밀러 시장 점유율 확대 가속.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.news1.kr/example/18" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">뉴스1</span>
+          <span class="event-link-title">셀트리온 FDA 승인 획득</span>
+          <span class="event-link-time">6시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 6시간 전</span>
+      <span class="event-time">업데이트: 4시간 전</span>
+      
+    </div>
+  </a><a href="/stocks/us/NVDA/events/us-NVDA-2026-02-04-blackwell/" class="event-card" data-type="guidance" data-started-at="2026-02-03T22:00:00.000Z" data-updated-at="2026-02-04T01:00:00.000Z" data-market="us" data-ticker="NVDA" data-confidence="reported">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">NVDA</span>
+        <span class="event-company">엔비디아</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#2196f322;border-color:#2196f355;color:#2196f3">보도</span>
+        <span class="event-label" data-type="guidance">가이던스</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>엔비디아, 블랙웰 GPU 2분기 대량 양산 돌입 확인.</li><li>MS·아마존·구글 등 빅테크 주문량 전분기 대비 3배 증가.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> AI 인프라 투자 가속화 수혜, 연간 매출 1,500억 달러 전망.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.cnbc.com/example/10" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">CNBC</span>
+          <span class="event-link-title">NVIDIA Blackwell Mass Production Begins</span>
+          <span class="event-link-time">8시간 전</span>
+        </a>
+      
+        <a href="https://www.wsj.com/example/11" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">WSJ</span>
+          <span class="event-link-title">Big Tech Races to Secure NVIDIA GPUs</span>
+          <span class="event-link-time">10시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 8시간 전</span>
+      <span class="event-time">업데이트: 5시간 전</span>
+      <span class="event-bundle">동일 이슈 2건 묶음</span>
+    </div>
+  </a><a href="/stocks/us/GOOGL/events/us-GOOGL-2026-02-04-antitrust/" class="event-card" data-type="lawsuit" data-started-at="2026-02-03T20:00:00.000Z" data-updated-at="2026-02-03T22:00:00.000Z" data-market="us" data-ticker="GOOGL" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">GOOGL</span>
+        <span class="event-company">알파벳</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="lawsuit">소송</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>구글, 미국 법무부 반독점 소송 1심 패소.</li><li>검색엔진 시장 지배력 남용 인정, 구제책 협의 예정.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 사업 분할 가능성 대두, 규제 리스크 장기화 전망.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.reuters.com/example/19" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">Reuters</span>
+          <span class="event-link-title">Google Loses Antitrust Case</span>
+          <span class="event-link-time">10시간 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 10시간 전</span>
+      <span class="event-time">업데이트: 8시간 전</span>
+      
+    </div>
+  </a><a href="/stocks/kr/005930/events/kr-005930-2026-02-03-q4-earnings/" class="event-card is-hidden" data-type="earnings" data-started-at="2026-02-03T04:00:00.000Z" data-updated-at="2026-02-03T06:00:00.000Z" data-market="kr" data-ticker="005930" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">005930</span>
+        <span class="event-company">삼성전자</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="earnings">실적</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>삼성전자 2025년 4분기 영업이익 12.3조원, 전년比 +45%.</li><li>HBM·AI 서버 DRAM 호조로 DS부문 흑자 전환 확정.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 메모리 슈퍼사이클 진입 신호, 업종 전체 re-rating 기대.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.yna.co.kr/example/3" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">연합뉴스</span>
+          <span class="event-link-title">삼성전자 4분기 영업익 12.3조</span>
+          <span class="event-link-time">1일 전</span>
+        </a>
+      
+        <a href="https://www.mk.co.kr/example/4" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">매일경제</span>
+          <span class="event-link-title">삼성전자 DS부문 2분기 연속 흑자</span>
+          <span class="event-link-time">1일 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 1일 전</span>
+      <span class="event-time">업데이트: 1일 전</span>
+      <span class="event-bundle">동일 이슈 2건 묶음</span>
+    </div>
+  </a><a href="/stocks/us/META/events/us-META-2026-02-03-threads/" class="event-card is-hidden" data-type="earnings" data-started-at="2026-02-03T02:00:00.000Z" data-updated-at="2026-02-03T04:00:00.000Z" data-market="us" data-ticker="META" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">META</span>
+        <span class="event-company">메타</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="earnings">실적</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>메타, 쓰레드 MAU 5억 돌파로 트위터(X) 추월.</li><li>광고 수익화 본격 시작, 2026년 매출 기여 50억 달러 전망.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 소셜미디어 경쟁 구도 재편, 신규 성장동력 확보.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://techcrunch.com/example/15" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">TechCrunch</span>
+          <span class="event-link-title">Threads Hits 500M Users</span>
+          <span class="event-link-time">1일 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 1일 전</span>
+      <span class="event-time">업데이트: 1일 전</span>
+      
+    </div>
+  </a><a href="/stocks/us/TSLA/events/us-TSLA-2026-02-03-q4-delivery/" class="event-card is-hidden" data-type="earnings" data-started-at="2026-02-03T00:00:00.000Z" data-updated-at="2026-02-03T02:00:00.000Z" data-market="us" data-ticker="TSLA" data-confidence="confirmed">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">TSLA</span>
+        <span class="event-company">테슬라</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#4caf5022;border-color:#4caf5055;color:#4caf50">확정</span>
+        <span class="event-label" data-type="earnings">실적</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>테슬라 4분기 인도량 51만대, 시장 예상 48만대 상회.</li><li>연간 인도량 195만대로 역대 최고 기록 경신.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 수요 둔화 우려 해소, 2026년 가이던스 상향 가능성.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.bloomberg.com/example/9" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">Bloomberg</span>
+          <span class="event-link-title">Tesla Q4 Deliveries Beat Estimates</span>
+          <span class="event-link-time">1일 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 1일 전</span>
+      <span class="event-time">업데이트: 1일 전</span>
+      
+    </div>
+  </a><a href="/stocks/us/JPM/events/us-JPM-2026-02-03-rate-outlook/" class="event-card is-hidden" data-type="macro" data-started-at="2026-02-02T22:00:00.000Z" data-updated-at="2026-02-03T00:00:00.000Z" data-market="us" data-ticker="JPM" data-confidence="reported">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">JPM</span>
+        <span class="event-company">JP모건</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#2196f322;border-color:#2196f355;color:#2196f3">보도</span>
+        <span class="event-label" data-type="macro">매크로</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>JP모건, 2026년 연준 금리 인하 3회 전망 유지.</li><li>상반기 동결 후 하반기 75bp 인하 예상.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 글로벌 금리 방향성 판단 참고, 금융주 투자 심리 영향.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://www.bloomberg.com/example/17" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">Bloomberg</span>
+          <span class="event-link-title">JPMorgan Sees 3 Fed Rate Cuts in 2026</span>
+          <span class="event-link-time">1일 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 1일 전</span>
+      <span class="event-time">업데이트: 1일 전</span>
+      
+    </div>
+  </a><a href="/stocks/us/AAPL/events/us-AAPL-2026-02-03-ai-iphone/" class="event-card is-hidden" data-type="guidance" data-started-at="2026-02-02T18:00:00.000Z" data-updated-at="2026-02-02T22:00:00.000Z" data-market="us" data-ticker="AAPL" data-confidence="speculative">
+    <div class="event-header">
+      
+      <div class="event-ticker-info">
+        <span class="event-ticker">AAPL</span>
+        <span class="event-company">애플</span>
+      </div>
+      
+      <div class="event-badges">
+        <span class="confidence-badge" style="background:#ff980022;border-color:#ff980055;color:#ff9800">관측</span>
+        <span class="event-label" data-type="guidance">가이던스</span>
+      </div>
+    </div>
+    <ul class="event-summary">
+      <li>애플, 아이폰17 프로에 자체 AI 칩 탑재 확정.</li><li>온디바이스 AI 성능 40% 향상, 클라우드 의존도 대폭 감소.</li>
+    </ul>
+    <div class="event-why">
+      <strong>왜 중요?</strong> 삼성·구글 대비 AI 경쟁력 강화, 프리미엄 시장 지배력 확대.
+    </div>
+    <div class="event-links">
+      
+        <a href="https://appleinsider.com/example/12" target="_blank" rel="noopener" class="event-link">
+          <span class="event-link-source">Apple Insider</span>
+          <span class="event-link-title">iPhone 17 Pro to Feature Apple AI Chip</span>
+          <span class="event-link-time">1일 전</span>
+        </a>
+      
+    </div>
+    <div class="event-meta-row">
+      <span class="event-time">발생: 1일 전</span>
+      <span class="event-time">업데이트: 1일 전</span>
+      
+    </div>
+  </a>
+      </div>
+    </section>
+
+    <section style="margin-top:32px;">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">국내 TOP25 종목</h2>
+          <div class="section-sub">25개 종목</div>
+        </div>
+      </div>
+      
+      <div class="stock-grid" id="stockGrid">
+        
+      <a href="/stocks/kr/005930/" class="stock-item" data-market="kr" data-ticker="005930" data-name-ko="삼성전자" data-name-en="Samsung Electronics" data-count-24="1" data-count-168="2" data-count-720="2">
+        <div class="stock-ticker">005930</div>
+        <div class="stock-name">삼성전자</div>
+        <div class="stock-name-en">Samsung Electronics</div>
+        <div class="stock-badge hot" data-badge >1건 (24h)</div>
+      </a>
+    
+      <a href="/stocks/kr/000660/" class="stock-item" data-market="kr" data-ticker="000660" data-name-ko="SK하이닉스" data-name-en="SK Hynix" data-count-24="1" data-count-168="1" data-count-720="1">
+        <div class="stock-ticker">000660</div>
+        <div class="stock-name">SK하이닉스</div>
+        <div class="stock-name-en">SK Hynix</div>
+        <div class="stock-badge hot" data-badge >1건 (24h)</div>
+      </a>
+    
+      <a href="/stocks/kr/373220/" class="stock-item" data-market="kr" data-ticker="373220" data-name-ko="LG에너지솔루션" data-name-en="LG Energy Solution" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">373220</div>
+        <div class="stock-name">LG에너지솔루션</div>
+        <div class="stock-name-en">LG Energy Solution</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/207940/" class="stock-item" data-market="kr" data-ticker="207940" data-name-ko="삼성바이오로직스" data-name-en="Samsung Biologics" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">207940</div>
+        <div class="stock-name">삼성바이오로직스</div>
+        <div class="stock-name-en">Samsung Biologics</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/005380/" class="stock-item" data-market="kr" data-ticker="005380" data-name-ko="현대차" data-name-en="Hyundai Motor" data-count-24="1" data-count-168="1" data-count-720="1">
+        <div class="stock-ticker">005380</div>
+        <div class="stock-name">현대차</div>
+        <div class="stock-name-en">Hyundai Motor</div>
+        <div class="stock-badge hot" data-badge >1건 (24h)</div>
+      </a>
+    
+      <a href="/stocks/kr/068270/" class="stock-item" data-market="kr" data-ticker="068270" data-name-ko="셀트리온" data-name-en="Celltrion" data-count-24="1" data-count-168="1" data-count-720="1">
+        <div class="stock-ticker">068270</div>
+        <div class="stock-name">셀트리온</div>
+        <div class="stock-name-en">Celltrion</div>
+        <div class="stock-badge hot" data-badge >1건 (24h)</div>
+      </a>
+    
+      <a href="/stocks/kr/000270/" class="stock-item" data-market="kr" data-ticker="000270" data-name-ko="기아" data-name-en="Kia" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">000270</div>
+        <div class="stock-name">기아</div>
+        <div class="stock-name-en">Kia</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/035420/" class="stock-item" data-market="kr" data-ticker="035420" data-name-ko="NAVER" data-name-en="NAVER" data-count-24="1" data-count-168="1" data-count-720="1">
+        <div class="stock-ticker">035420</div>
+        <div class="stock-name">NAVER</div>
+        <div class="stock-name-en">NAVER</div>
+        <div class="stock-badge hot" data-badge >1건 (24h)</div>
+      </a>
+    
+      <a href="/stocks/kr/051910/" class="stock-item" data-market="kr" data-ticker="051910" data-name-ko="LG화학" data-name-en="LG Chem" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">051910</div>
+        <div class="stock-name">LG화학</div>
+        <div class="stock-name-en">LG Chem</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/006400/" class="stock-item" data-market="kr" data-ticker="006400" data-name-ko="삼성SDI" data-name-en="Samsung SDI" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">006400</div>
+        <div class="stock-name">삼성SDI</div>
+        <div class="stock-name-en">Samsung SDI</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/035720/" class="stock-item" data-market="kr" data-ticker="035720" data-name-ko="카카오" data-name-en="Kakao" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">035720</div>
+        <div class="stock-name">카카오</div>
+        <div class="stock-name-en">Kakao</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/028260/" class="stock-item" data-market="kr" data-ticker="028260" data-name-ko="삼성물산" data-name-en="Samsung C&amp;T" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">028260</div>
+        <div class="stock-name">삼성물산</div>
+        <div class="stock-name-en">Samsung C&amp;T</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/105560/" class="stock-item" data-market="kr" data-ticker="105560" data-name-ko="KB금융" data-name-en="KB Financial" data-count-24="1" data-count-168="1" data-count-720="1">
+        <div class="stock-ticker">105560</div>
+        <div class="stock-name">KB금융</div>
+        <div class="stock-name-en">KB Financial</div>
+        <div class="stock-badge hot" data-badge >1건 (24h)</div>
+      </a>
+    
+      <a href="/stocks/kr/055550/" class="stock-item" data-market="kr" data-ticker="055550" data-name-ko="신한지주" data-name-en="Shinhan Financial" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">055550</div>
+        <div class="stock-name">신한지주</div>
+        <div class="stock-name-en">Shinhan Financial</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/012330/" class="stock-item" data-market="kr" data-ticker="012330" data-name-ko="현대모비스" data-name-en="Hyundai Mobis" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">012330</div>
+        <div class="stock-name">현대모비스</div>
+        <div class="stock-name-en">Hyundai Mobis</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/066570/" class="stock-item" data-market="kr" data-ticker="066570" data-name-ko="LG전자" data-name-en="LG Electronics" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">066570</div>
+        <div class="stock-name">LG전자</div>
+        <div class="stock-name-en">LG Electronics</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/003670/" class="stock-item" data-market="kr" data-ticker="003670" data-name-ko="포스코홀딩스" data-name-en="POSCO Holdings" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">003670</div>
+        <div class="stock-name">포스코홀딩스</div>
+        <div class="stock-name-en">POSCO Holdings</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/086790/" class="stock-item" data-market="kr" data-ticker="086790" data-name-ko="하나금융지주" data-name-en="Hana Financial" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">086790</div>
+        <div class="stock-name">하나금융지주</div>
+        <div class="stock-name-en">Hana Financial</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/034730/" class="stock-item" data-market="kr" data-ticker="034730" data-name-ko="SK" data-name-en="SK Inc" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">034730</div>
+        <div class="stock-name">SK</div>
+        <div class="stock-name-en">SK Inc</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/096770/" class="stock-item" data-market="kr" data-ticker="096770" data-name-ko="SK이노베이션" data-name-en="SK Innovation" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">096770</div>
+        <div class="stock-name">SK이노베이션</div>
+        <div class="stock-name-en">SK Innovation</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/032830/" class="stock-item" data-market="kr" data-ticker="032830" data-name-ko="삼성생명" data-name-en="Samsung Life" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">032830</div>
+        <div class="stock-name">삼성생명</div>
+        <div class="stock-name-en">Samsung Life</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/003550/" class="stock-item" data-market="kr" data-ticker="003550" data-name-ko="LG" data-name-en="LG Corp" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">003550</div>
+        <div class="stock-name">LG</div>
+        <div class="stock-name-en">LG Corp</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/017670/" class="stock-item" data-market="kr" data-ticker="017670" data-name-ko="SK텔레콤" data-name-en="SK Telecom" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">017670</div>
+        <div class="stock-name">SK텔레콤</div>
+        <div class="stock-name-en">SK Telecom</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/030200/" class="stock-item" data-market="kr" data-ticker="030200" data-name-ko="KT" data-name-en="KT Corp" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">030200</div>
+        <div class="stock-name">KT</div>
+        <div class="stock-name-en">KT Corp</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      <a href="/stocks/kr/036570/" class="stock-item" data-market="kr" data-ticker="036570" data-name-ko="엔씨소프트" data-name-en="NCSOFT" data-count-24="0" data-count-168="0" data-count-720="0">
+        <div class="stock-ticker">036570</div>
+        <div class="stock-name">엔씨소프트</div>
+        <div class="stock-name-en">NCSOFT</div>
+        <div class="stock-badge " data-badge style="display:none;"></div>
+      </a>
+    
+      </div>
+    </section>
+  
+    </main>
+
+    <footer>
+      <p>© <span id="year">2026</span> <span class="accent">miso_daily</span> — TOP50 종목 사건 아카이브</p>
+      <p style="margin-top:8px;font-size:11px;opacity:.7;">
+        본 서비스는 뉴스 원문을 직접 게시하지 않으며, 출처 링크를 통해 원문을 확인할 수 있습니다.<br>
+        투자 조언이 아니며, 투자 결정은 본인의 판단과 책임하에 이루어져야 합니다.
+      </p>
+    </footer>
+  </div>
+
+  
+  <script type="module" src="/assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "misodaily",
+  "version": "1.0.0",
+  "description": "TOP50 종목 사건 아카이브 - SEO 최적화 정적 사이트",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-static.mjs",
+    "serve": "firebase emulators:start --only hosting --project demo-misodaily",
+    "dev": "npm run build && npm run serve"
+  },
+  "keywords": ["stock", "news", "archive", "seo"],
+  "license": "MIT"
+}
