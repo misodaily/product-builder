@@ -1,7 +1,4 @@
-/**
- * TOP50 종목 마스터 데이터
- */
-
+// src/data/top50.js
 export const TOP50_KR = [
   { market: 'kr', ticker: '005930', exchange: 'KRX', name_ko: '삼성전자', name_en: 'Samsung Electronics' },
   { market: 'kr', ticker: '000660', exchange: 'KRX', name_ko: 'SK하이닉스', name_en: 'SK Hynix' },
@@ -59,13 +56,3 @@ export const TOP50_US = [
 ];
 
 export const TOP50 = [...TOP50_KR, ...TOP50_US];
-
-export function findStock(market, ticker) {
-  return TOP50.find(s => s.market === market && s.ticker === ticker);
-}
-
-export function getByMarket(market) {
-  if (market === 'kr') return TOP50_KR;
-  if (market === 'us') return TOP50_US;
-  return TOP50;
-}

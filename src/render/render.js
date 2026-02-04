@@ -1,27 +1,43 @@
-/**
- * 정적 HTML 렌더링 함수 (DOM 없이 문자열 반환)
- */
-
-import { TOP50, TOP50_KR, TOP50_US, findStock, getByMarket } from '../data/top50.js';
-import { SAMPLE_EVENTS, EVENT_LABELS, CONFIDENCE_LABELS, getEventsByTicker, getTopEvents, getEventById, countEventsByLabel, getEventsByPeriod } from '../data/events.js';
-
-const SITE_URL = 'https://misodaily.web.app';
-const BUILD_TIME = new Date('2026-02-04T15:00:00+09:00');
+// src/render/render.js
+import { TOP50_KR, TOP50_US, TOP50 } from '../../data/top50.js';
+import { EVENT_LABELS, SAMPLE_EVENTS } from '../../data/events.js';
 
 // ==================== Utilities ====================
+export function findStock(market, ticker) {
+  return TOP50.find(s => s.market === market && s.ticker === ticker);
+}
 
-export function escapeHtml(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+export function getEventsByTicker(market, ticker) {
+  return SAMPLE_EVENTS.filter(e => e.market === market && e.ticker === ticker)
+    .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+}
+
+export function getEventsByTimeframe(timeframe = '24h', limit = -1) {
+  const now = new Date();
+  let cutoff;
+  if (timeframe === '7d') {
+    cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (timeframe === '30d') {
+    cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  } else { // default '24h'
+    cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  }
+
+  const events = SAMPLE_EVENTS
+    .filter(e => new Date(e.startedAt) > cutoff)
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+  return limit > 0 ? events.slice(0, limit) : events;
+}
+
+export function getEventById(id) {
+  return SAMPLE_EVENTS.find(e => e.id === id);
 }
 
 export function formatRelTime(iso) {
   const d = new Date(iso);
-  const diffMs = BUILD_TIME - d;
+  const now = new Date();
+  const diffMs = now - d;
   const diffMin = Math.floor(diffMs / 60000);
   if (diffMin < 1) return '방금';
   if (diffMin < 60) return `${diffMin}분 전`;
@@ -29,12 +45,6 @@ export function formatRelTime(iso) {
   if (diffH < 24) return `${diffH}시간 전`;
   const diffD = Math.floor(diffH / 24);
   return `${diffD}일 전`;
-}
-
-export function isWithinHours(iso, hours) {
-  const d = new Date(iso);
-  const cutoff = new Date(BUILD_TIME.getTime() - hours * 60 * 60 * 1000);
-  return d > cutoff;
 }
 
 export function formatDateTime(iso) {
@@ -47,112 +57,102 @@ export function formatDate(iso) {
   return d.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-// ==================== Components ====================
+export function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
+// ==================== Renderers ====================
 export function renderConfidenceBadge(confidence) {
-  const conf = CONFIDENCE_LABELS[confidence] || CONFIDENCE_LABELS.reported;
-  return `<span class="confidence-badge" style="background:${conf.color}22;border-color:${conf.color}55;color:${conf.color}">${conf.label}</span>`;
-}
-
-export function renderEventCard(event, showTicker = true, isLink = true, hidden = false) {
-  const stock = findStock(event.market, event.ticker);
-  const stockName = stock ? stock.name_ko : event.ticker;
-  const linkCount = event.links?.length || 0;
-  const conf = CONFIDENCE_LABELS[event.confidence] || CONFIDENCE_LABELS.reported;
-
-  const hiddenClass = hidden ? ' is-hidden' : '';
-  const dataAttrs = [
-    `data-type="${escapeHtml(event.type)}"`,
-    `data-started-at="${escapeHtml(event.startedAt)}"`,
-    `data-updated-at="${escapeHtml(event.updatedAt)}"`,
-    `data-market="${escapeHtml(event.market)}"`,
-    `data-ticker="${escapeHtml(event.ticker)}"`,
-    `data-confidence="${escapeHtml(event.confidence || 'reported')}"`
-  ].join(' ');
-
-  const cardContent = `
-    <div class="event-header">
-      ${showTicker ? `
-      <div class="event-ticker-info">
-        <span class="event-ticker">${escapeHtml(event.ticker)}</span>
-        <span class="event-company">${escapeHtml(stockName)}</span>
-      </div>
-      ` : ''}
-      <div class="event-badges">
-        <span class="confidence-badge" style="background:${conf.color}22;border-color:${conf.color}55;color:${conf.color}">${conf.label}</span>
-        <span class="event-label" data-type="${event.type}">${EVENT_LABELS[event.type] || '기타'}</span>
-      </div>
-    </div>
-    <ul class="event-summary">
-      ${event.summary2.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
-    </ul>
-    <div class="event-why">
-      <strong>왜 중요?</strong> ${escapeHtml(event.why)}
-    </div>
-    <div class="event-links">
-      ${event.links.slice(0, 3).map(link => `
-        <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener" class="event-link">
-          <span class="event-link-source">${escapeHtml(link.source)}</span>
-          <span class="event-link-title">${escapeHtml(link.title)}</span>
-          <span class="event-link-time">${formatRelTime(link.publishedAt)}</span>
-        </a>
-      `).join('')}
-    </div>
-    <div class="event-meta-row">
-      <span class="event-time">발생: ${formatRelTime(event.startedAt)}</span>
-      <span class="event-time">업데이트: ${formatRelTime(event.updatedAt)}</span>
-      ${linkCount > 1 ? `<span class="event-bundle">동일 이슈 ${linkCount}건 묶음</span>` : ''}
-    </div>
-  `;
-
-  if (isLink) {
-    return `<a href="/stocks/${event.market}/${event.ticker}/events/${event.id}/" class="event-card${hiddenClass}" ${dataAttrs}>${cardContent}</a>`;
+  let colorClass = '';
+  let label = '';
+  switch (confidence) {
+    case 'confirmed':
+      colorClass = 'confirmed';
+      label = '확정';
+      break;
+    case 'speculative':
+      colorClass = 'speculative';
+      label = '관측';
+      break;
+    case 'reported':
+    default:
+      colorClass = 'reported';
+      label = '보도';
+      break;
   }
-  return `<div class="event-card${hiddenClass}" ${dataAttrs}>${cardContent}</div>`;
+  return `<span class="confidence-badge ${colorClass}">${label}</span>`;
 }
 
-export function renderStockGrid(stocks) {
+
+export function renderStockGrid(stocks, showBadge = false, timeframe = '24h') {
   return stocks.map(s => {
     const events = getEventsByTicker(s.market, s.ticker);
-    const recent24h = getEventsByPeriod(events, 24).length;
-    const recent7d = getEventsByPeriod(events, 24 * 7).length;
-    const recent30d = getEventsByPeriod(events, 24 * 30).length;
-    const badgeText = recent24h > 0
-      ? `${recent24h}건 (24h)`
-      : recent7d > 0
-        ? `${recent7d}건 (7d)`
-        : recent30d > 0
-          ? `${recent30d}건 (30d)`
-          : '';
+    let recentEventCount = 0;
+    if (timeframe === '7d') {
+      recentEventCount = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 7*24*60*60*1000)).length;
+    } else if (timeframe === '30d') {
+      recentEventCount = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 30*24*60*60*1000)).length;
+    } else { // default '24h'
+      recentEventCount = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 24*24*60*60*1000)).length;
+    }
+
     return `
-      <a href="/stocks/${s.market}/${s.ticker}/" class="stock-item" data-market="${escapeHtml(s.market)}" data-ticker="${escapeHtml(s.ticker)}" data-name-ko="${escapeHtml(s.name_ko)}" data-name-en="${escapeHtml(s.name_en)}" data-count-24="${recent24h}" data-count-168="${recent7d}" data-count-720="${recent30d}">
+      <a href="/stocks/${s.market}/${s.ticker}" class="stock-item">
         <div class="stock-ticker">${escapeHtml(s.ticker)}</div>
         <div class="stock-name">${escapeHtml(s.name_ko)}</div>
-        <div class="stock-name-en">${escapeHtml(s.name_en)}</div>
-        <div class="stock-badge ${recent24h > 0 ? 'hot' : ''}" data-badge ${badgeText ? '' : 'style="display:none;"'}>${badgeText}</div>
+        ${showBadge && recentEventCount > 0 ? `<div class="stock-badge">${recentEventCount}건 사건</div>` : ''}
       </a>
     `;
   }).join('');
 }
 
-export function renderLabelFilters(events, activeLabel = 'all') {
-  const counts = countEventsByLabel(events);
-  const total = events.length;
+export function renderEventCard(event, showTicker = true) {
+  const stock = findStock(event.market, event.ticker);
+  const stockName = stock ? stock.name_ko : event.ticker;
 
   return `
-    <div class="label-filters">
-      <span class="label-pill ${activeLabel === 'all' ? 'active' : ''}" data-label="all">전체 <span class="pill-count">${total}</span></span>
-      ${Object.entries(EVENT_LABELS).map(([k, v]) => {
-        const count = counts[k] || 0;
-        return `<span class="label-pill ${activeLabel === k ? 'active' : ''}" data-label="${k}">${v} <span class="pill-count">${count}</span></span>`;
-      }).join('')}
-    </div>
+    <a href="/stocks/${event.market}/${event.ticker}/events/${event.id}" class="event-card">
+      <div class="event-header">
+        ${showTicker ? `
+        <div class="event-ticker-info">
+          <span class="event-ticker">${escapeHtml(event.ticker)}</span>
+          <span class="event-company">${escapeHtml(stockName)}</span>
+        </div>
+        ` : ''}
+        <div class="event-labels-group">
+          <span class="event-label" data-type="${event.type}">${EVENT_LABELS[event.type] || '기타'}</span>
+          ${event.confidence ? renderConfidenceBadge(event.confidence) : ''}
+        </div>
+      </div>
+      <ul class="event-summary">
+        ${event.summary2.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+      </ul>
+      <div class="event-why">
+        <strong>왜 중요?</strong> ${escapeHtml(event.why)}
+      </div>
+      <div class="event-links">
+        ${event.links.slice(0, 3).map(link => `
+          <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener" class="event-link">
+            <span class="event-link-source">${escapeHtml(link.source)}</span>
+            ${escapeHtml(link.title)}
+            <span class="event-link-time">${formatRelTime(link.publishedAt)}</span>
+          </a>
+        `).join('')}
+      </div>
+      <div class="event-time">
+        <span>발생: ${formatRelTime(event.startedAt)}</span> ·
+        <span>업데이트: ${formatRelTime(event.updatedAt)}</span>
+      </div>
+    </a>
   `;
 }
 
-// ==================== Page Renderers ====================
-
-export function renderHomePage(marketFilter = null) {
+export function renderHomePage(params = {}) {
+  const { marketFilter, timeframe = '24h' } = params;
   let stocks = TOP50;
   let pageTitle = 'TOP50 종목 사건 아카이브';
 
@@ -164,33 +164,36 @@ export function renderHomePage(marketFilter = null) {
     pageTitle = '미국 TOP25 종목';
   }
 
-  const topEvents30d = getTopEvents(24 * 30, 30);
-  const topEvents24h = topEvents30d.filter(e => isWithinHours(e.startedAt, 24));
+  const topEvents = getEventsByTimeframe(timeframe);
+
+  const eventCounts = {};
+  topEvents.forEach(event => {
+    eventCounts[event.type] = (eventCounts[event.type] || 0) + 1;
+  });
 
   return `
     <section>
       <div class="section-header">
         <div>
           <h1 class="section-title">오늘의 주요 사건</h1>
-          <div class="section-sub">최근 발생한 주요 이슈</div>
+          <div class="section-sub">최근 ${timeframe === '24h' ? '24시간' : timeframe === '7d' ? '7일' : '30일'} 내 발생한 주요 이슈</div>
         </div>
-      <div class="period-toggle" data-target="topEvents" data-scope="home">
-        <button class="period-btn active" data-hours="24">24h</button>
-        <button class="period-btn" data-hours="168">7d</button>
-        <button class="period-btn" data-hours="720">30d</button>
+        <div class="timeframe-toggle">
+          <span class="timeframe-pill ${timeframe === '24h' ? 'active' : ''}" data-timeframe="24h">24h</span>
+          <span class="timeframe-pill ${timeframe === '7d' ? 'active' : ''}" data-timeframe="7d">7d</span>
+          <span class="timeframe-pill ${timeframe === '30d' ? 'active' : ''}" data-timeframe="30d">30d</span>
+        </div>
       </div>
-    </div>
-
-      <div class="search-box">
-        <input type="text" id="stockSearch" placeholder="티커 또는 회사명 검색 (예: 삼성전자, AAPL, Apple)" autocomplete="off" />
+      <div class="label-filters">
+        <span class="label-pill active" data-label="all">전체</span>
+        ${Object.entries(EVENT_LABELS).map(([k, v]) => `
+          <span class="label-pill" data-label="${k}">${v} ${eventCounts[k] ? `(${eventCounts[k]})` : ''}</span>
+        `).join('')}
       </div>
-
-      ${renderLabelFilters(topEvents24h)}
-
       <div class="event-cards" id="topEvents">
-        ${topEvents30d.length > 0
-          ? topEvents30d.map(e => renderEventCard(e, true, true, !isWithinHours(e.startedAt, 24))).join('')
-          : '<div class="empty-state"><h2>최근 사건 없음</h2><p>최근 30일 내 등록된 사건이 없습니다.</p><a href="/top50/" class="related-link">전체 종목 보기</a></div>'
+        ${topEvents.length > 0
+          ? topEvents.map(e => renderEventCard(e, true)).join('')
+          : '<div class="empty-state"><h2>최근 사건 없음</h2><p>최근 24시간 내 등록된 사건이 없습니다.</p></div>'
         }
       </div>
     </section>
@@ -198,34 +201,39 @@ export function renderHomePage(marketFilter = null) {
     <section style="margin-top:32px;">
       <div class="section-header">
         <div>
-          <h2 class="section-title">${pageTitle}</h2>
+          <h2 class="section-title">${marketFilter ? pageTitle : 'TOP50 종목'}</h2>
           <div class="section-sub">${stocks.length}개 종목</div>
         </div>
       </div>
       ${!marketFilter ? `
       <div class="tabs">
-        <a href="/top50/" class="tab active" data-market="">전체</a>
-        <a href="/top50/kr/" class="tab" data-market="kr">국내 25</a>
-        <a href="/top50/us/" class="tab" data-market="us">미국 25</a>
+        <span class="tab active" data-market="">전체</span>
+        <span class="tab" data-market="kr">국내 25</span>
+        <span class="tab" data-market="us">미국 25</span>
       </div>
       ` : ''}
       <div class="stock-grid" id="stockGrid">
-        ${renderStockGrid(stocks)}
+        ${renderStockGrid(stocks, true, timeframe)}
       </div>
     </section>
   `;
 }
 
-export function renderStockPage(market, ticker) {
+export function renderStockPage(market, ticker, timeframe = '24h') {
   const stock = findStock(market, ticker);
   if (!stock) {
     return renderNotFound();
   }
 
   const events = getEventsByTicker(market, ticker);
-  const events24h = getEventsByPeriod(events, 24);
-  const events7d = getEventsByPeriod(events, 24 * 7);
-  const events30d = getEventsByPeriod(events, 24 * 30);
+  let filteredEvents;
+  if (timeframe === '7d') {
+    filteredEvents = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 7*24*60*60*1000));
+  } else if (timeframe === '30d') {
+    filteredEvents = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 30*24*60*60*1000));
+  } else { // default '24h'
+    filteredEvents = events.filter(e => new Date(e.startedAt) > new Date(Date.now() - 24*24*60*60*1000));
+  }
 
   // Dedupe links
   const allLinks = events.flatMap(e => e.links);
@@ -236,15 +244,11 @@ export function renderStockPage(market, ticker) {
     return true;
   }).slice(0, 10);
 
-  const relatedStocks = (market === 'kr' ? TOP50_KR : TOP50_US)
-    .filter(s => s.ticker !== ticker)
-    .slice(0, 6);
-
   return `
     <nav class="breadcrumb">
-      <a href="/top50/">홈</a>
+      <a href="/top50">홈</a>
       <span class="breadcrumb-sep">›</span>
-      <a href="/top50/${market}/">${market === 'kr' ? '국내' : '미국'}</a>
+      <a href="/top50?market=${market}">${market === 'kr' ? '국내' : '미국'}</a>
       <span class="breadcrumb-sep">›</span>
       <span>${escapeHtml(stock.name_ko)}</span>
     </nav>
@@ -255,25 +259,24 @@ export function renderStockPage(market, ticker) {
         <span class="ticker">${escapeHtml(stock.ticker)}</span>
         <span class="exchange">${escapeHtml(stock.exchange)}</span>
       </div>
-      <div class="stock-header-sub">${escapeHtml(stock.name_en)}</div>
     </div>
 
     <section>
       <div class="section-header">
         <div>
-          <h2 class="section-title">최근 사건</h2>
-          <div class="section-sub" id="eventCountLabel" data-count-24="${events24h.length}" data-count-168="${events7d.length}" data-count-720="${events30d.length}">${events24h.length}건 (24시간)</div>
+          <h2 class="section-title">최근 ${timeframe === '24h' ? '24시간' : timeframe === '7d' ? '7일' : '30일'} 사건</h2>
+          <div class="section-sub">${filteredEvents.length}건</div>
         </div>
-        <div class="period-toggle" data-target="stockEvents" data-scope="stock">
-          <button class="period-btn active" data-hours="24">24h</button>
-          <button class="period-btn" data-hours="168">7d</button>
-          <button class="period-btn" data-hours="720">30d</button>
+        <div class="timeframe-toggle">
+          <span class="timeframe-pill ${timeframe === '24h' ? 'active' : ''}" data-timeframe="24h">24h</span>
+          <span class="timeframe-pill ${timeframe === '7d' ? 'active' : ''}" data-timeframe="7d">7d</span>
+          <span class="timeframe-pill ${timeframe === '30d' ? 'active' : ''}" data-timeframe="30d">30d</span>
         </div>
       </div>
-      <div class="event-cards" id="stockEvents">
-        ${events.length > 0
-          ? events.map(e => renderEventCard(e, false, true, !isWithinHours(e.startedAt, 24))).join('')
-          : `<div class="empty-state"><h2>등록된 사건 없음</h2><p>이 종목에 대한 사건이 아직 없습니다.</p><a href="/top50/" class="related-link">홈으로 돌아가기</a></div>`
+      <div class="event-cards">
+        ${filteredEvents.length > 0
+          ? filteredEvents.slice(0, 5).map(e => renderEventCard(e, false)).join('')
+          : '<div class="empty-state"><p>최근 해당 기간 내 등록된 사건이 없습니다.</p><a href="/top50" class="related-link">홈으로 돌아가기</a></div>'
         }
       </div>
     </section>
@@ -281,12 +284,12 @@ export function renderStockPage(market, ticker) {
     ${uniqueLinks.length > 0 ? `
     <section class="related-section">
       <h3 class="related-title">관련 원문 링크</h3>
-      <div class="source-links">
+      <div class="event-links" style="gap:8px;">
         ${uniqueLinks.map(l => `
-          <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" class="source-link">
-            <span class="source-link-source">${escapeHtml(l.source)}</span>
-            <span class="source-link-title">${escapeHtml(l.title)}</span>
-            <span class="source-link-time">${formatRelTime(l.publishedAt)}</span>
+          <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" class="event-link" style="padding:8px 12px;background:rgba(0,0,0,.2);border-radius:8px;">
+            <span class="event-link-source">${escapeHtml(l.source)}</span>
+            ${escapeHtml(l.title)}
+            <span class="event-link-time">${formatRelTime(l.publishedAt)}</span>
           </a>
         `).join('')}
       </div>
@@ -296,7 +299,11 @@ export function renderStockPage(market, ticker) {
     <section class="related-section">
       <h3 class="related-title">관련 종목</h3>
       <div class="related-links">
-        ${relatedStocks.map(s => `<a href="/stocks/${s.market}/${s.ticker}/" class="related-link">${escapeHtml(s.name_ko)}</a>`).join('')}
+        ${(market === 'kr' ? TOP50_KR : TOP50_US)
+          .filter(s => s.ticker !== ticker)
+          .slice(0, 6)
+          .map(s => `<a href="/stocks/${s.market}/${s.ticker}" class="related-link">${escapeHtml(s.name_ko)}</a>`)
+          .join('')}
       </div>
     </section>
   `;
@@ -310,57 +317,92 @@ export function renderEventPage(market, ticker, eventId) {
     return renderNotFound();
   }
 
+  const dateStr = formatDate(event.startedAt);
+  const title = `${stock.name_ko} ${event.summary2[0]} (${dateStr})`;
+
+  // Related events (same ticker, different event)
   const relatedEvents = getEventsByTicker(market, ticker)
     .filter(e => e.id !== eventId)
     .slice(0, 3);
 
+  // Related stocks (same market)
   const relatedStocks = (market === 'kr' ? TOP50_KR : TOP50_US)
     .filter(s => s.ticker !== ticker)
     .slice(0, 5);
 
-  const conf = CONFIDENCE_LABELS[event.confidence] || CONFIDENCE_LABELS.reported;
+  // JSON-LD for Article/NewsArticle
+  const jsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "headline": event.summary2[0],
+    "image": "https://example.com/og.png", // Placeholder, will be replaced by build script
+    "datePublished": event.startedAt,
+    "dateModified": event.updatedAt,
+    "author": {
+      "@type": "Organization",
+      "name": "miso_daily"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "miso_daily",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://example.com/og.png" // Placeholder
+      }
+    },
+    "description": event.summary2.join(' '),
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://example.com/stocks/${market}/${ticker}/events/${eventId}` // Placeholder
+    },
+    "url": `https://example.com/stocks/${market}/${ticker}/events/${eventId}`, // Placeholder
+    "inLanguage": "ko-KR"
+  });
 
   return `
+    <script type="application/ld+json">${jsonLd}</script>
     <nav class="breadcrumb">
-      <a href="/top50/">홈</a>
+      <a href="/top50">홈</a>
       <span class="breadcrumb-sep">›</span>
-      <a href="/top50/${market}/">${market === 'kr' ? '국내' : '미국'}</a>
+      <a href="/top50?market=${market}">${market === 'kr' ? '국내' : '미국'}</a>
       <span class="breadcrumb-sep">›</span>
-      <a href="/stocks/${market}/${ticker}/">${escapeHtml(stock.name_ko)}</a>
+      <a href="/stocks/${market}/${ticker}">${escapeHtml(stock.name_ko)}</a>
       <span class="breadcrumb-sep">›</span>
       <span>사건 상세</span>
     </nav>
 
     <article class="event-detail-header">
-      <div class="event-detail-badges">
-        <span class="confidence-badge" style="background:${conf.color}22;border-color:${conf.color}55;color:${conf.color}">${conf.label}</span>
+      <div class="event-labels-group" style="margin-bottom:12px;display:inline-flex;gap:8px;">
         <span class="event-label" data-type="${event.type}">${EVENT_LABELS[event.type] || '기타'}</span>
+        ${event.confidence ? renderConfidenceBadge(event.confidence) : ''}
       </div>
       <h1>${event.summary2.map(s => escapeHtml(s)).join('<br>')}</h1>
       <div class="event-detail-meta">
-        <a href="/stocks/${market}/${ticker}/" class="event-detail-stock">
+        <a href="/stocks/${market}/${ticker}" style="color:var(--accent2);font-weight:600;">
           ${escapeHtml(stock.ticker)} ${escapeHtml(stock.name_ko)}
         </a>
-        <span class="meta-sep">·</span>
+        <span>·</span>
         <span>발생: ${formatDateTime(event.startedAt)}</span>
-        <span class="meta-sep">·</span>
+        <span>·</span>
         <span>업데이트: ${formatDateTime(event.updatedAt)}</span>
       </div>
     </article>
 
-    <section class="event-detail-why">
-      <h2>왜 중요한가?</h2>
-      <p>${escapeHtml(event.why)}</p>
+    <section style="margin-bottom:24px;">
+      <div class="event-why" style="font-size:15px;padding:16px;">
+        <strong>왜 중요한가?</strong><br>
+        ${escapeHtml(event.why)}
+      </div>
     </section>
 
-    <section class="event-detail-sources">
-      <h2>근거 링크</h2>
-      <div class="source-links">
+    <section>
+      <h2 class="section-title" style="font-size:16px;margin-bottom:12px;">근거 링크</h2>
+      <div class="event-links" style="gap:10px;">
         ${event.links.map(l => `
-          <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" class="source-link">
-            <span class="source-link-source">${escapeHtml(l.source)}</span>
-            <span class="source-link-title">${escapeHtml(l.title)}</span>
-            <span class="source-link-time">${formatDateTime(l.publishedAt)}</span>
+          <a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" class="event-link" style="padding:12px 14px;background:rgba(0,0,0,.25);border-radius:10px;border:1px solid var(--line);">
+            <span class="event-link-source">${escapeHtml(l.source)}</span>
+            <span style="flex:1;">${escapeHtml(l.title)}</span>
+            <span class="event-link-time">${formatDateTime(l.publishedAt)}</span>
           </a>
         `).join('')}
       </div>
@@ -378,7 +420,11 @@ export function renderEventPage(market, ticker, eventId) {
     <section class="related-section">
       <h3 class="related-title">관련 종목</h3>
       <div class="related-links">
-        ${relatedStocks.map(s => `<a href="/stocks/${s.market}/${s.ticker}/" class="related-link">${escapeHtml(s.name_ko)}</a>`).join('')}
+        ${(market === 'kr' ? TOP50_KR : TOP50_US)
+          .filter(s => s.ticker !== ticker)
+          .slice(0, 6)
+          .map(s => `<a href="/stocks/${s.market}/${s.ticker}" class="related-link">${escapeHtml(s.name_ko)}</a>`)
+          .join('')}
       </div>
     </section>
   `;
@@ -389,32 +435,7 @@ export function renderNotFound() {
     <div class="empty-state">
       <h2>페이지를 찾을 수 없습니다</h2>
       <p>요청하신 페이지가 존재하지 않거나 삭제되었습니다.</p>
-      <a href="/top50/" class="related-link" style="display:inline-block;margin-top:16px;">홈으로 돌아가기</a>
+      <a href="/top50" class="related-link" style="display:inline-block;margin-top:16px;">홈으로 돌아가기</a>
     </div>
   `;
-}
-
-// ==================== JSON-LD ====================
-
-export function generateEventJsonLd(event, stock) {
-  const conf = CONFIDENCE_LABELS[event.confidence] || CONFIDENCE_LABELS.reported;
-  return {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    "headline": event.summary2[0],
-    "description": event.summary2.join(' ') + ' ' + event.why,
-    "datePublished": event.startedAt,
-    "dateModified": event.updatedAt,
-    "url": `${SITE_URL}/stocks/${event.market}/${event.ticker}/events/${event.id}/`,
-    "publisher": {
-      "@type": "Organization",
-      "name": "miso_daily"
-    },
-    "inLanguage": event.market === 'kr' ? 'ko' : 'en',
-    "about": {
-      "@type": "Corporation",
-      "name": stock.name_en,
-      "tickerSymbol": stock.ticker
-    }
-  };
 }

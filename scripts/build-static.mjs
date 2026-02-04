@@ -1,191 +1,128 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// scripts/build-static.mjs
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { TOP50, TOP50_KR, TOP50_US, findStock } from '../src/data/top50.js';
-import { SAMPLE_EVENTS } from '../src/data/events.js';
-import {
-  renderHomePage,
-  renderStockPage,
-  renderEventPage,
-  generateEventJsonLd,
-  formatDate
-} from '../src/render/render.js';
-
-const SITE_URL = 'https://misodaily.web.app';
-const BUILD_TIME = new Date('2026-02-04T15:00:00+09:00');
-
+// Resolve __dirname equivalent in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '..');
-const publicDir = path.join(projectRoot, 'public');
+
+// Import data
+import { TOP50_KR, TOP50_US, TOP50 } from '../src/data/top50.js';
+import { EVENT_LABELS, SAMPLE_EVENTS } from '../src/data/events.js';
+
+// Import rendering functions
+import {
+  findStock, getEventsByTicker, getEventsByTimeframe, getEventById,
+  formatRelTime, formatDateTime, formatDate, escapeHtml,
+  renderStockGrid, renderEventCard, renderHomePage, renderStockPage, renderEventPage, renderNotFound, renderConfidenceBadge
+} from '../src/render/render.js';
+
+const PUBLIC_DIR = path.resolve(__dirname, '../public');
+const TEMPLATES_DIR = path.resolve(__dirname, '../src/templates');
 
 async function ensureDir(dirPath) {
   await fs.mkdir(dirPath, { recursive: true });
 }
 
-function applyTemplate(template, data) {
-  let html = template;
-  for (const [key, value] of Object.entries(data)) {
-    html = html.replaceAll(`{{${key}}}`, value ?? '');
-  }
-  return html;
+function renderBaseTemplate(content, pageMeta = {}) {
+  let template = fs.readFileSync(path.join(TEMPLATES_DIR, 'base.html'), 'utf-8');
+
+  // Replace SEO placeholders
+  template = template.replace('{{ page.title }}', pageMeta.title || 'TOP50 종목 사건 아카이브 | miso_daily');
+  template = template.replace('{{ page.description }}', pageMeta.description || '국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다. 실적, 수주, 규제, 소송 등 투자에 중요한 이슈를 사건 단위로 확인하세요.');
+  template = template.replace('{{ page.canonical }}', pageMeta.canonical || 'https://example.com/top50'); // Placeholder, will be replaced with actual URL
+  template = template.replace('{{ page.og_title }}', pageMeta.og_title || pageMeta.title || 'TOP50 종목 사건 아카이브 | miso_daily');
+  template = template.replace('{{ page.og_description }}', pageMeta.og_description || pageMeta.description || '국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다. 실적, 수주, 규제, 소송 등 투자에 중요한 이슈를 사건 단위로 확인하세요.');
+  template = template.replace('{{ page.og_url }}', pageMeta.og_url || pageMeta.canonical || 'https://example.com/top50');
+  template = template.replace('{{ page.og_image }}', pageMeta.og_image || '/og.png');
+  template = template.replace('{{ page.twitter_title }}', pageMeta.twitter_title || pageMeta.title || 'TOP50 종목 사건 아카이브 | miso_daily');
+  template = template.replace('{{ page.twitter_description }}', pageMeta.twitter_description || pageMeta.description || '국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다. 실적, 수주, 규제, 소송 등 투자에 중요한 이슈를 사건 단위로 확인하세요.');
+  template = template.replace('{{ page.twitter_image }}', pageMeta.twitter_image || '/og.png');
+
+  return template.replace('<!--APP_CONTENT-->', content);
 }
 
-function buildMeta({ title, description, url, ogType = 'website' }) {
-  return {
-    TITLE: title,
-    DESCRIPTION: description,
-    CANONICAL: url,
-    OG_TITLE: title,
-    OG_DESCRIPTION: description,
-    OG_URL: url,
-    OG_IMAGE: `${SITE_URL}/og.png`,
-    OG_TYPE: ogType,
-    TWITTER_TITLE: title,
-    TWITTER_DESCRIPTION: description,
-  };
+async function buildPage(route, content, pageMeta = {}) {
+  const filePath = path.join(PUBLIC_DIR, route, 'index.html');
+  await ensureDir(path.dirname(filePath));
+
+  const finalHtml = renderBaseTemplate(content, pageMeta);
+  await fs.writeFile(filePath, finalHtml);
 }
 
-async function writePage(outPath, template, meta, content, nav = {}, jsonLd = null) {
-  const jsonLdBlock = jsonLd
-    ? `<script type="application/ld+json" id="jsonld">${jsonLd}</script>`
-    : '';
-  const html = applyTemplate(template, {
-    ...meta,
-    CONTENT: content,
-    JSON_LD_BLOCK: jsonLdBlock,
-    NAV_HOME: nav.home ? 'active' : '',
-    NAV_KR: nav.kr ? 'active' : '',
-    NAV_US: nav.us ? 'active' : '',
+async function generateStaticPages() {
+  console.log('Generating static pages...');
+
+  // Home Page
+  await buildPage('/top50', renderHomePage({ marketFilter: undefined, timeframe: '24h' }), {
+    title: 'TOP50 종목 사건 아카이브 | miso_daily',
+    description: '국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다. 실적, 수주, 규제, 소송 등 투자에 중요한 이슈를 사건 단위로 확인하세요.',
+    canonical: 'https://example.com/top50',
+    og_image: '/og.png',
   });
-  await ensureDir(path.dirname(outPath));
-  await fs.writeFile(outPath, html, 'utf8');
-}
+  await buildPage('/top50/kr', renderHomePage({ marketFilter: 'kr', timeframe: '24h' }), {
+    title: '국내 TOP25 종목 | miso_daily',
+    description: '국내 TOP25 종목의 주요 사건을 실시간으로 정리합니다.',
+    canonical: 'https://example.com/top50/kr',
+    og_image: '/og.png',
+  });
+  await buildPage('/top50/us', renderHomePage({ marketFilter: 'us', timeframe: '24h' }), {
+    title: '미국 TOP25 종목 | miso_daily',
+    description: '미국 TOP25 종목의 주요 사건을 실시간으로 정리합니다.',
+    canonical: 'https://example.com/top50/us',
+    og_image: '/og.png',
+  });
 
-function isoDate(date) {
-  return date.toISOString().split('T')[0];
-}
-
-async function build() {
-  const templatePath = path.join(projectRoot, 'src', 'templates', 'base.html');
-  const template = await fs.readFile(templatePath, 'utf8');
-
-  await fs.rm(publicDir, { recursive: true, force: true });
-  await ensureDir(publicDir);
-
-  const homeTitle = 'TOP50 종목 사건 아카이브 | miso_daily';
-  const homeDesc = '국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다. 실적, 수주, 규제, 소송 등 투자에 중요한 이슈를 사건 단위로 확인하세요.';
-
-  await writePage(
-    path.join(publicDir, 'index.html'),
-    template,
-    buildMeta({ title: homeTitle, description: homeDesc, url: `${SITE_URL}/top50/` }),
-    renderHomePage(null),
-    { home: true }
-  );
-
-  await writePage(
-    path.join(publicDir, 'top50', 'index.html'),
-    template,
-    buildMeta({ title: homeTitle, description: homeDesc, url: `${SITE_URL}/top50/` }),
-    renderHomePage(null),
-    { home: true }
-  );
-
-  await writePage(
-    path.join(publicDir, 'top50', 'kr', 'index.html'),
-    template,
-    buildMeta({
-      title: '국내 TOP25 종목 사건 아카이브 | miso_daily',
-      description: '국내 TOP25 종목의 주요 사건을 사건 단위로 정리합니다. 실적, 규제, 수주 등 핵심 이슈를 빠르게 확인하세요.',
-      url: `${SITE_URL}/top50/kr/`
-    }),
-    renderHomePage('kr'),
-    { kr: true }
-  );
-
-  await writePage(
-    path.join(publicDir, 'top50', 'us', 'index.html'),
-    template,
-    buildMeta({
-      title: '미국 TOP25 종목 사건 아카이브 | miso_daily',
-      description: '미국 TOP25 종목의 주요 사건을 사건 단위로 정리합니다. 실적, 규제, 수주 등 핵심 이슈를 빠르게 확인하세요.',
-      url: `${SITE_URL}/top50/us/`
-    }),
-    renderHomePage('us'),
-    { us: true }
-  );
-
+  // Stock Pages
   for (const stock of TOP50) {
-    const url = `${SITE_URL}/stocks/${stock.market}/${stock.ticker}/`;
-    const title = `${stock.name_ko} (${stock.ticker}) 사건 아카이브 | miso_daily`;
-    const description = `${stock.name_ko}의 주요 사건을 사건 단위로 정리합니다. 실적, 규제, 수주, 소송 등 투자에 중요한 이슈를 확인하세요.`;
+    const stockPath = `/stocks/${stock.market}/${stock.ticker}`;
+    await buildPage(stockPath, renderStockPage(stock.market, stock.ticker, '24h'), {
+      title: `${stock.name_ko} (${stock.ticker}) 사건 아카이브 | miso_daily`,
+      description: `${stock.name_ko}의 최근 주요 사건을 확인하세요. 실적, 수주, 규제 등 투자에 중요한 이슈를 사건 단위로 정리합니다.`,
+      canonical: `https://example.com${stockPath}`,
+      og_image: '/og.png',
+    });
 
-    await writePage(
-      path.join(publicDir, 'stocks', stock.market, stock.ticker, 'index.html'),
-      template,
-      buildMeta({ title, description, url }),
-      renderStockPage(stock.market, stock.ticker),
-      { [stock.market]: true }
-    );
+    // Event Pages
+    const events = getEventsByTicker(stock.market, stock.ticker);
+    for (const event of events) {
+      const eventPath = `${stockPath}/events/${event.id}`;
+      const dateStr = formatDate(event.startedAt);
+      const eventTitle = `${stock.name_ko} ${event.summary2[0]} (${dateStr})`;
+      await buildPage(eventPath, renderEventPage(stock.market, stock.ticker, event.id), {
+        title: `${eventTitle} | miso_daily`,
+        description: `${event.summary2.join(' ')} ${event.why}`,
+        canonical: `https://example.com${eventPath}`,
+        og_image: '/og.png',
+      });
+    }
   }
 
-  for (const event of SAMPLE_EVENTS) {
-    const stock = findStock(event.market, event.ticker);
-    if (!stock) continue;
-    const dateStr = formatDate(event.startedAt);
-    const title = `${stock.name_ko} ${event.summary2[0]} (${dateStr}) | miso_daily`;
-    const description = `${event.summary2.join(' ')} ${event.why}`;
-    const url = `${SITE_URL}/stocks/${event.market}/${event.ticker}/events/${event.id}/`;
-    const jsonLd = JSON.stringify(generateEventJsonLd(event, stock));
-
-    await writePage(
-      path.join(publicDir, 'stocks', event.market, event.ticker, 'events', event.id, 'index.html'),
-      template,
-      buildMeta({ title, description, url, ogType: 'article' }),
-      renderEventPage(event.market, event.ticker, event.id),
-      { [event.market]: true },
-      jsonLd
-    );
+  // sitemap.xml
+  let sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+  const allRoutes = ['/top50', '/top50/kr', '/top50/us'];
+  for (const stock of TOP50) {
+    allRoutes.push(`/stocks/${stock.market}/${stock.ticker}`);
+    const events = getEventsByTicker(stock.market, stock.ticker);
+    for (const event of events) {
+      allRoutes.push(`/stocks/${stock.market}/${stock.ticker}/events/${event.id}`);
+    }
   }
 
-  const urls = [
-    { loc: `${SITE_URL}/top50/`, lastmod: isoDate(BUILD_TIME) },
-    { loc: `${SITE_URL}/top50/kr/`, lastmod: isoDate(BUILD_TIME) },
-    { loc: `${SITE_URL}/top50/us/`, lastmod: isoDate(BUILD_TIME) },
-    ...TOP50.map(stock => ({
-      loc: `${SITE_URL}/stocks/${stock.market}/${stock.ticker}/`,
-      lastmod: isoDate(BUILD_TIME)
-    })),
-    ...SAMPLE_EVENTS.map(event => ({
-      loc: `${SITE_URL}/stocks/${event.market}/${event.ticker}/events/${event.id}/`,
-      lastmod: isoDate(new Date(event.updatedAt))
-    }))
-  ];
+  for (const route of allRoutes) {
+    sitemapContent += `  <url>\n    <loc>https://example.com${route}</loc>\n    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+  }
+  sitemapContent += `</urlset>`;
+  await fs.writeFile(path.join(PUBLIC_DIR, 'sitemap.xml'), sitemapContent);
+  console.log('sitemap.xml generated.');
 
-  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map(u => `  <url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('\n') +
-    `\n</urlset>\n`;
+  // robots.txt
+  const robotsContent = `User-agent: *\nAllow: /\n\nSitemap: https://example.com/sitemap.xml`;
+  await fs.writeFile(path.join(PUBLIC_DIR, 'robots.txt'), robotsContent);
+  console.log('robots.txt generated.');
 
-  await fs.writeFile(path.join(publicDir, 'sitemap.xml'), sitemap, 'utf8');
-  await fs.writeFile(
-    path.join(publicDir, 'robots.txt'),
-    `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n`,
-    'utf8'
-  );
-
-  await ensureDir(path.join(publicDir, 'assets'));
-  const clientPath = path.join(projectRoot, 'src', 'client', 'app.js');
-  const clientJs = await fs.readFile(clientPath, 'utf8');
-  await fs.writeFile(path.join(publicDir, 'assets', 'app.js'), clientJs, 'utf8');
-
-  const ogSource = path.join(projectRoot, 'src', 'assets', 'og.png');
-  await fs.copyFile(ogSource, path.join(publicDir, 'og.png'));
+  console.log('Static pages generation complete!');
 }
 
-build().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+generateStaticPages().catch(console.error);

@@ -1,26 +1,31 @@
+<!-- src/templates/base.html -->
 <!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>{{TITLE}}</title>
-  <meta name="description" content="{{DESCRIPTION}}" />
 
-  <meta property="og:type" content="{{OG_TYPE}}" />
+  <!-- SEO 기본 메타 -->
+  <title>{{ page.title }}</title>
+  <meta name="description" content="{{ page.description }}" />
+  <link rel="canonical" href="{{ page.canonical }}" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
   <meta property="og:site_name" content="miso_daily" />
-  <meta property="og:title" content="{{OG_TITLE}}" />
-  <meta property="og:description" content="{{OG_DESCRIPTION}}" />
-  <meta property="og:url" content="{{OG_URL}}" />
-  <meta property="og:image" content="{{OG_IMAGE}}" />
+  <meta property="og:title" content="{{ page.og_title }}" />
+  <meta property="og:description" content="{{ page.og_description }}" />
+  <meta property="og:url" content="{{ page.og_url }}" />
+  <meta property="og:image" content="{{ page.og_image }}" />
   <meta property="og:locale" content="ko_KR" />
 
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{{TWITTER_TITLE}}" />
-  <meta name="twitter:description" content="{{TWITTER_DESCRIPTION}}" />
-  <meta name="twitter:image" content="{{OG_IMAGE}}" />
+  <meta name="twitter:title" content="{{ page.twitter_title }}" />
+  <meta name="twitter:description" content="{{ page.twitter_description }}" />
+  <meta name="twitter:image" content="{{ page.twitter_image }}" />
 
-  <link rel="canonical" href="{{CANONICAL}}" />
-
+  <!-- Styles -->
   <style>
     :root {
       --bg: #0b0d12;
@@ -79,7 +84,9 @@
       gap: 12px;
       transition: opacity .2s ease-in-out;
     }
-    .brand:hover { opacity: .9; }
+    .brand:hover {
+      opacity: .9;
+    }
     .logo {
       width: 42px;
       height: 42px;
@@ -150,45 +157,6 @@
     .tab:hover, .tab.active {
       background: rgba(255,106,0,.15);
       border-color: rgba(255,106,0,.4);
-      text-decoration: none;
-    }
-
-    /* Search */
-    .search-box {
-      margin-bottom: 12px;
-    }
-    .search-box input {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.03);
-      color: var(--text);
-      font-size: 14px;
-    }
-    .search-box input::placeholder { color: rgba(255,255,255,.45); }
-
-    /* Period toggle */
-    .period-toggle {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .period-btn {
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
-      background: rgba(255,255,255,.04);
-      border: 1px solid var(--line);
-      color: var(--text);
-      cursor: pointer;
-      transition: .15s;
-    }
-    .period-btn:hover, .period-btn.active {
-      background: rgba(255,106,0,.2);
-      border-color: rgba(255,106,0,.5);
     }
 
     /* Event Labels Filter */
@@ -206,19 +174,10 @@
       border: 1px solid var(--line);
       cursor: pointer;
       transition: .15s;
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
     }
     .label-pill:hover, .label-pill.active {
       background: rgba(255,106,0,.15);
       border-color: rgba(255,106,0,.4);
-    }
-    .pill-count {
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.1);
-      font-size: 10px;
     }
 
     /* Section headers */
@@ -227,8 +186,6 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
-      gap: 12px;
-      flex-wrap: wrap;
     }
     .section-title {
       font-size: 18px;
@@ -244,218 +201,266 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 10px;
+      margin-bottom: 24px;
     }
     .stock-item {
-      background: var(--panel);
-      border: 1px solid var(--line);
       padding: 14px;
-      border-radius: 14px;
-      transition: .15s;
-      min-height: 130px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      position: relative;
+      background: rgba(18,22,34,.72);
+      border: 1px solid var(--line);
+      border-radius: var(--radius2);
+      transition: .15s transform, .15s border, .15s background;
     }
     .stock-item:hover {
-      border-color: rgba(255,106,0,.4);
-      box-shadow: 0 8px 18px rgba(0,0,0,.2);
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.14);
+      background: rgba(18,22,34,.85);
       text-decoration: none;
     }
-    .stock-ticker { font-size: 15px; font-weight: 700; }
-    .stock-name { font-size: 13px; color: var(--text); }
-    .stock-name-en { font-size: 11px; color: var(--muted); }
-    .stock-badge {
-      margin-top: auto;
-      font-size: 11px;
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid var(--line);
-      display: inline-block;
-      width: fit-content;
+    .stock-ticker {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent2);
     }
-    .stock-badge.hot {
-      background: rgba(255,106,0,.2);
-      border-color: rgba(255,106,0,.4);
-      color: #ffb07a;
+    .stock-name {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stock-badge {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 8px;
+      font-size: 10px;
+      border-radius: 999px;
+      background: rgba(255,106,0,.12);
+      border: 1px solid rgba(255,106,0,.35);
     }
 
-    /* Event cards */
+    /* Event Cards */
     .event-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      display: flex;
+      flex-direction: column;
       gap: 12px;
     }
     .event-card {
-      background: var(--panel);
-      border: 1px solid var(--line);
       padding: 16px;
-      border-radius: var(--radius2);
-      transition: .15s;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      background: rgba(18,22,34,.72);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      transition: .15s transform, .15s border;
     }
     .event-card:hover {
-      border-color: rgba(255,106,0,.4);
-      box-shadow: 0 8px 18px rgba(0,0,0,.2);
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.14);
       text-decoration: none;
     }
     .event-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .event-ticker-info {
+      display: flex;
+      align-items: center;
       gap: 8px;
     }
-    .event-ticker-info { display: flex; flex-direction: column; gap: 4px; }
-    .event-ticker { font-size: 13px; font-weight: 700; }
-    .event-company { font-size: 12px; color: var(--muted); }
-    .event-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-    .event-label {
-      font-size: 10px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid var(--line);
-      display: inline-flex;
-      align-items: center;
-    }
-    .confidence-badge {
-      font-size: 10px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      font-weight: 700;
-    }
-    .event-summary {
-      list-style: disc;
-      padding-left: 16px;
+    .event-ticker {
       font-size: 13px;
-      display: grid;
-      gap: 6px;
+      font-weight: 700;
+      color: var(--accent2);
+    }
+    .event-company {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .event-label {
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 999px;
+      background: rgba(255,106,0,.12);
+      border: 1px solid rgba(255,106,0,.35);
+      white-space: nowrap;
+    }
+    .event-label[data-type="earnings"] { background: rgba(76,175,80,.15); border-color: rgba(76,175,80,.4); }
+    .event-label[data-type="guidance"] { background: rgba(33,150,243,.15); border-color: rgba(33,150,243,.4); }
+    .event-label[data-type="contract"] { background: rgba(156,39,176,.15); border-color: rgba(156,39,176,.4); }
+    .event-label[data-type="regulation"] { background: rgba(255,152,0,.15); border-color: rgba(255,152,0,.4); }
+    .event-label[data-type="lawsuit"] { background: rgba(244,67,54,.15); border-color: rgba(244,67,54,.4); }
+    .event-label[data-type="recall"] { background: rgba(233,30,99,.15); border-color: rgba(233,30,99,.4); }
+    .event-label[data-type="macro"] { background: rgba(0,188,212,.15); border-color: rgba(0,188,212,.4); }
+
+    .event-summary {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .event-summary li {
+      margin-bottom: 4px;
+      list-style: none;
+      padding-left: 16px;
+      position: relative;
+    }
+    .event-summary li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
     }
     .event-why {
       font-size: 13px;
+      color: var(--muted);
       padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(255,106,0,.12);
-      border: 1px solid rgba(255,106,0,.25);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+      background: rgba(0,0,0,.2);
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .event-why strong {
+      color: var(--text);
     }
     .event-links {
-      display: grid;
-      gap: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
     .event-link {
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: rgba(255,255,255,.03);
-      border: 1px solid var(--line);
-      display: grid;
-      gap: 4px;
-    }
-    .event-link:hover { border-color: rgba(255,106,0,.4); text-decoration: none; }
-    .event-link-source { font-size: 10px; color: var(--muted); }
-    .event-link-title { font-size: 12px; }
-    .event-link-time { font-size: 10px; color: var(--muted); }
-    .event-meta-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--muted);
-    }
-    .event-bundle {
-      padding: 3px 8px;
-      border-radius: 999px;
-      border: 1px dashed rgba(255,255,255,.12);
-    }
-
-    /* Stock detail */
-    .stock-header {
-      padding: 16px;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: var(--radius2);
-      margin-bottom: 16px;
-    }
-    .stock-header-main {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+    }
+    .event-link:hover { color: var(--text); }
+    .event-link-source {
+      padding: 2px 6px;
+      background: rgba(255,255,255,.06);
+      border-radius: 4px;
+      font-size: 10px;
+    }
+    .event-link-time {
+      font-family: var(--mono);
+      font-size: 10px;
+      opacity: .7;
+    }
+    .event-time {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+      margin-top: 10px;
+    }
+
+    /* Stock Detail Page */
+    .stock-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
     }
     .stock-header-main h1 {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
     }
     .stock-header-main .ticker {
-      padding: 4px 8px;
-      border-radius: 8px;
-      font-size: 12px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid var(--line);
+      font-size: 14px;
+      color: var(--accent2);
+      font-weight: 600;
     }
-    .stock-header-main .exchange { font-size: 12px; color: var(--muted); }
-    .stock-header-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
-
-    /* Event detail */
-    .event-detail-header {
-      padding: 18px;
-      border-radius: var(--radius2);
-      border: 1px solid var(--line);
-      background: var(--panel);
-      margin-bottom: 18px;
-    }
-    .event-detail-badges {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-    .event-detail-meta {
-      margin-top: 8px;
+    .stock-header-main .exchange {
       font-size: 12px;
       color: var(--muted);
+    }
+
+    .timeline-section {
+      margin-top: 24px;
+    }
+    .timeline-date {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      margin: 16px 0 8px;
+      padding-left: 4px;
+    }
+
+    /* Event Detail Page */
+    .event-detail-header {
+      margin-bottom: 24px;
+    }
+    .event-detail-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    .event-detail-meta {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .related-section {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+    .related-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .related-links {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
-    .event-detail-stock { color: var(--accent2); font-weight: 600; }
-    .meta-sep { opacity: .6; }
-    .event-detail-why {
-      padding: 18px;
-      border-radius: var(--radius2);
-      background: rgba(255,106,0,.12);
-      border: 1px solid rgba(255,106,0,.25);
-      margin-bottom: 18px;
-    }
-    .event-detail-why h2 { font-size: 16px; margin-bottom: 8px; }
-    .event-detail-sources h2 { font-size: 16px; margin-bottom: 10px; }
-
-    /* Related */
-    .related-section { margin-top: 24px; }
-    .related-title { font-size: 15px; margin-bottom: 10px; }
-    .related-links { display: flex; gap: 8px; flex-wrap: wrap; }
     .related-link {
-      padding: 8px 10px;
-      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
       background: rgba(255,255,255,.04);
       border: 1px solid var(--line);
-      font-size: 12px;
+      border-radius: 10px;
+      transition: .15s;
+    }
+    .related-link:hover {
+      background: rgba(255,106,0,.15);
+      border-color: rgba(255,106,0,.4);
+      text-decoration: none;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+    .empty-state h2 {
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .empty-state p {
+      font-size: 14px;
+      margin-bottom: 16px;
     }
 
     /* Breadcrumb */
     .breadcrumb {
       font-size: 12px;
       color: var(--muted);
-      margin-bottom: 12px;
+      margin-bottom: 16px;
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      gap: 8px;
       align-items: center;
     }
-    .breadcrumb a { color: var(--accent2); }
     .breadcrumb a:hover { color: var(--text); }
     .breadcrumb-sep { opacity: .5; }
 
@@ -470,19 +475,12 @@
     }
     footer .accent { color: var(--accent2); font-weight: 700; }
 
-    /* Empty state */
-    .empty-state {
-      padding: 20px;
-      border-radius: 14px;
-      border: 1px dashed var(--line);
-      background: rgba(255,255,255,.02);
+    /* Loading */
+    .loading {
       text-align: center;
+      padding: 40px;
       color: var(--muted);
     }
-    .empty-state h2 { font-size: 16px; margin-bottom: 6px; color: var(--text); }
-
-    /* Utility */
-    .is-hidden { display: none !important; }
 
     /* Mobile */
     @media (max-width: 768px) {
@@ -491,12 +489,15 @@
       .stock-grid { grid-template-columns: repeat(2, 1fr); }
       .event-header { flex-direction: column; }
     }
+
+    /* Utility */
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header class="header">
-      <a href="/top50/" class="brand">
+      <a href="/top50" class="brand">
         <div class="logo" aria-hidden="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4 18V6C4 5.44772 4.44772 5 5 5H9C9.55228 5 10 5.44772 10 6V18C10 18.5523 9.55228 19 9 19H5C4.44772 19 4 18.5523 4 18Z" fill="rgba(255,255,255,0.9)"/>
@@ -509,9 +510,9 @@
         </div>
       </a>
       <nav class="nav-links">
-        <a href="/top50/" class="nav-link {{NAV_HOME}}" data-nav="home">홈</a>
-        <a href="/top50/kr/" class="nav-link {{NAV_KR}}" data-nav="kr">국내 25</a>
-        <a href="/top50/us/" class="nav-link {{NAV_US}}" data-nav="us">미국 25</a>
+        <a href="/top50" class="nav-link" data-nav="home">홈</a>
+        <a href="/top50?market=kr" class="nav-link" data-nav="kr">국내 25</a>
+        <a href="/top50?market=us" class="nav-link" data-nav="us">미국 25</a>
       </nav>
     </header>
 
@@ -520,7 +521,8 @@
     </div>
 
     <main id="app">
-      {{CONTENT}}
+      <!-- Content will be pre-rendered here for SEO -->
+      <div class="loading">로딩 중...</div>
     </main>
 
     <footer>
@@ -532,7 +534,9 @@
     </footer>
   </div>
 
-  {{JSON_LD_BLOCK}}
-  <script type="module" src="/assets/app.js"></script>
+  <script type="module">
+    // This script will be minimized for client-side interactivity
+    // Import statements for data and render functions will be added by the build script
+  </script>
 </body>
 </html>

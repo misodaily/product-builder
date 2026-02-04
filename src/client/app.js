@@ -1,270 +1,240 @@
-const HOURS_IN_MS = 60 * 60 * 1000;
+// src/client/app.js
+import { TOP50_KR, TOP50_US, TOP50 } from '../data/top50.js';
+import { EVENT_LABELS, SAMPLE_EVENTS } from '../data/events.js';
+import {
+  findStock, getEventsByTicker, getEventsByTimeframe, getEventById,
+  formatRelTime, formatDateTime, formatDate, escapeHtml,
+  renderStockGrid, renderEventCard, renderHomePage, renderStockPage, renderEventPage, renderNotFound, renderConfidenceBadge
+} from '../render/render.js';
 
-function parseISO(value) {
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
+// ==================== Utilities (Client-side specific) ====================
+// For client-side SPA navigation, meta tags are dynamically updated.
+function updateClientMeta(opts) {
+  const { title, description, canonical, ogImage } = opts;
+  document.title = title;
+  document.querySelector('meta[name="description"]').content = description;
+  document.querySelector('meta[property="og:title"]').content = title;
+  document.querySelector('meta[property="og:description"]').content = description;
+  document.querySelector('meta[property="og:url"]').content = canonical;
+  document.querySelector('meta[property="og:image"]').content = window.location.origin + ogImage;
+  document.querySelector('meta[name="twitter:card"]').content = "summary_large_image";
+  document.querySelector('meta[name="twitter:title"]').content = title;
+  document.querySelector('meta[name="twitter:description"]').content = description;
+  document.querySelector('meta[name="twitter:image"]').content = window.location.origin + ogImage;
+  document.getElementById('canonical').href = canonical;
 }
 
-function isWithinHours(iso, hours) {
-  const d = parseISO(iso);
-  if (!d) return false;
-  return Date.now() - d.getTime() <= hours * HOURS_IN_MS;
-}
+// ==================== Router ====================
+const app = document.getElementById('app');
 
-function setActiveNav(pathname) {
-  const navLinks = document.querySelectorAll('.nav-link');
-  navLinks.forEach(link => link.classList.remove('active'));
-  if (pathname.startsWith('/top50/kr')) {
-    document.querySelector('[data-nav="kr"]')?.classList.add('active');
-    return;
+function parseRoute() {
+  const path = window.location.pathname;
+  const query = Object.fromEntries(new URLSearchParams(window.location.search));
+
+  if (path === '/top50' || path === '/' || path === '') {
+    return { page: 'home', query };
   }
-  if (pathname.startsWith('/top50/us')) {
-    document.querySelector('[data-nav="us"]')?.classList.add('active');
-    return;
+
+  const eventMatch = path.match(/^\/stocks\/([^/]+)\/([^/]+)\/events\/(.+)$/);
+  if (eventMatch) {
+    return { page: 'event', market: eventMatch[1], ticker: eventMatch[2], eventId: eventMatch[3], query };
   }
-  document.querySelector('[data-nav="home"]')?.classList.add('active');
+
+  const stockMatch = path.match(/^\/stocks\/([^/]+)\/([^/]+)$/);
+  if (stockMatch) {
+    return { page: 'stock', market: stockMatch[1], ticker: stockMatch[2], query };
+  }
+
+  return { page: '404', query };
 }
 
-function updateStockBadges(hours) {
-  document.querySelectorAll('.stock-item').forEach(item => {
-    const badge = item.querySelector('[data-badge]');
-    if (!badge) return;
-    const key = hours === 24 ? 'count24' : hours === 168 ? 'count168' : 'count720';
-    const count = Number(item.dataset[key] || 0);
-    if (count > 0) {
-      badge.textContent = `${count}건 (${hours === 24 ? '24h' : hours === 168 ? '7d' : '30d'})`;
-      badge.style.display = 'inline-block';
-      badge.classList.toggle('hot', hours === 24);
-    } else {
-      badge.style.display = 'none';
-      badge.classList.remove('hot');
+function renderClientSide() {
+  const route = parseRoute();
+  let content = '';
+  let pageTitle = '';
+  let pageDescription = '';
+  let pageCanonical = '';
+  let ogImage = '/og.png'; // Default OG image
+
+  switch (route.page) {
+    case 'home': {
+      const marketFilter = route.query.market;
+      const timeframe = route.query.timeframe || '24h';
+      let currentStocks = TOP50;
+      let currentTitle = 'TOP50 종목 사건 아카이브';
+
+      if (marketFilter === 'kr') {
+        currentStocks = TOP50_KR;
+        currentTitle = '국내 TOP25 종목';
+      } else if (marketFilter === 'us') {
+        currentStocks = TOP50_US;
+        currentTitle = '미국 TOP25 종목';
+      }
+      content = renderHomePage({ marketFilter, timeframe });
+      pageTitle = `${currentTitle} | miso_daily`;
+      pageDescription = '국내외 TOP50 종목의 주요 사건을 실시간으로 정리합니다. 실적, 수주, 규제, 소송 등 투자에 중요한 이슈를 사건 단위로 확인하세요.';
+      pageCanonical = window.location.origin + (window.location.pathname === '/' ? '/top50' : window.location.pathname) + window.location.search;
+      break;
     }
-  });
+    case 'stock': {
+      const { market, ticker } = route;
+      const timeframe = route.query.timeframe || '24h';
+      const stock = findStock(market, ticker);
+      if (stock) {
+        content = renderStockPage(market, ticker, timeframe);
+        pageTitle = `${stock.name_ko} (${stock.ticker}) 사건 아카이브 | miso_daily`;
+        pageDescription = `${stock.name_ko}의 최근 주요 사건을 확인하세요. 실적, 수주, 규제 등 투자에 중요한 이슈를 사건 단위로 정리합니다.`;
+        pageCanonical = `${window.location.origin}/stocks/${market}/${ticker}`;
+      } else {
+        content = renderNotFound();
+        pageTitle = '페이지를 찾을 수 없습니다 | miso_daily';
+        pageDescription = '요청하신 페이지를 찾을 수 없습니다.';
+        pageCanonical = window.location.href;
+      }
+      break;
+    }
+    case 'event': {
+      const { market, ticker, eventId } = route;
+      const event = getEventById(eventId);
+      const stock = findStock(market, ticker);
+      if (event && stock) {
+        content = renderEventPage(market, ticker, eventId);
+        const dateStr = formatDate(event.startedAt);
+        pageTitle = `${stock.name_ko} ${event.summary2[0]} (${dateStr}) | miso_daily`;
+        pageDescription = `${event.summary2.join(' ')} ${event.why}`;
+        pageCanonical = `${window.location.origin}/stocks/${market}/${ticker}/events/${eventId}`;
+      } else {
+        content = renderNotFound();
+        pageTitle = '페이지를 찾을 수 없습니다 | miso_daily';
+        pageDescription = '요청하신 페이지를 찾을 수 없습니다.';
+        pageCanonical = window.location.href;
+      }
+      break;
+    }
+    default:
+      content = renderNotFound();
+      pageTitle = '페이지를 찾을 수 없습니다 | miso_daily';
+      pageDescription = '요청하신 페이지를 찾을 수 없습니다.';
+      pageCanonical = window.location.href;
+  }
+
+  app.innerHTML = content;
+  updateClientMeta({ title: pageTitle, description: pageDescription, canonical: pageCanonical, ogImage });
+  bindEvents(); // Rebind events after content changes
+  window.scrollTo(0, 0);
 }
 
-function updateLabelCounts(container, hours) {
-  const counts = {};
-  let total = 0;
-  container.querySelectorAll('.event-card').forEach(card => {
-    const startedAt = card.dataset.startedAt;
-    if (!isWithinHours(startedAt, hours)) return;
-    total += 1;
-    const type = card.dataset.type || 'other';
-    counts[type] = (counts[type] || 0) + 1;
+function navigate(href, replace = false) {
+  if (replace) {
+    window.history.replaceState({}, '', href);
+  } else {
+    window.history.pushState({}, '', href);
+  }
+  renderClientSide();
+}
+
+function bindEvents() {
+  // Tab clicks
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.onclick = () => { // Use onclick for simplicity, or add/remove event listeners properly
+      const market = tab.dataset.market;
+      const url = market ? `/top50?market=${market}` : '/top50';
+      navigate(url);
+    };
   });
 
+  // Label filter clicks
   document.querySelectorAll('.label-pill').forEach(pill => {
-    const label = pill.dataset.label;
-    const countEl = pill.querySelector('.pill-count');
-    if (!countEl) return;
-    if (label === 'all') {
-      countEl.textContent = total;
-    } else {
-      countEl.textContent = counts[label] || 0;
-    }
-  });
-}
-
-function filterEventCards(container, hours, activeLabel) {
-  let visibleCount = 0;
-  container.querySelectorAll('.event-card').forEach(card => {
-    const within = isWithinHours(card.dataset.startedAt, hours);
-    const matchesLabel = activeLabel === 'all' || card.dataset.type === activeLabel;
-    if (within && matchesLabel) {
-      card.classList.remove('is-hidden');
-      visibleCount += 1;
-    } else {
-      card.classList.add('is-hidden');
-    }
-  });
-
-  let empty = container.querySelector('.empty-state');
-  if (visibleCount === 0) {
-    if (!empty) {
-      empty = document.createElement('div');
-      empty.className = 'empty-state';
-      empty.innerHTML = '<h2>해당 기간의 사건 없음</h2><p>선택한 기간에 해당하는 사건이 없습니다.</p><a href="/top50/" class="related-link">전체 종목 보기</a>';
-      container.appendChild(empty);
-    }
-  } else if (empty) {
-    empty.remove();
-  }
-}
-
-function initHome() {
-  const searchInput = document.getElementById('stockSearch');
-  const stockGrid = document.getElementById('stockGrid');
-  const eventContainer = document.getElementById('topEvents');
-  const periodToggle = document.querySelector('.period-toggle[data-scope="home"]');
-
-  if (searchInput && stockGrid) {
-    searchInput.addEventListener('input', () => {
-      const q = searchInput.value.trim().toLowerCase();
-      stockGrid.querySelectorAll('.stock-item').forEach(item => {
-        const text = `${item.dataset.ticker} ${item.dataset.nameKo} ${item.dataset.nameEn}`.toLowerCase();
-        item.style.display = text.includes(q) ? '' : 'none';
-      });
-    });
-  }
-
-  let activeLabel = 'all';
-
-  document.querySelectorAll('.label-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
+    pill.onclick = () => {
       document.querySelectorAll('.label-pill').forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
-      activeLabel = pill.dataset.label || 'all';
-      if (eventContainer && periodToggle) {
-        const hours = Number(periodToggle.querySelector('.period-btn.active')?.dataset.hours || 24);
-        filterEventCards(eventContainer, hours, activeLabel);
+      const activeLabel = pill.dataset.label;
+
+      const currentRoute = parseRoute();
+      const timeframe = currentRoute.query.timeframe || '24h';
+      
+      const allEvents = getEventsByTimeframe(timeframe);
+      const filtered = activeLabel === 'all'
+        ? allEvents
+        : allEvents.filter(e => e.type === activeLabel);
+
+      const container = document.getElementById('topEvents');
+      if (container) {
+        if (filtered.length > 0) {
+          container.innerHTML = filtered.map(e => renderEventCard(e, true)).join('');
+        } else {
+          container.innerHTML = '<div class="empty-state"><h2>해당 라벨의 사건 없음</h2><p>최근 해당 기간 내 등록된 사건이 없습니다.</p></div>';
+        }
       }
-    });
+    };
   });
 
-  if (periodToggle && eventContainer) {
-    periodToggle.addEventListener('click', (e) => {
-      const btn = e.target.closest('.period-btn');
-      if (!btn) return;
-      periodToggle.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const hours = Number(btn.dataset.hours || 24);
-      filterEventCards(eventContainer, hours, activeLabel);
-      updateLabelCounts(eventContainer, hours);
-      updateStockBadges(hours);
-    });
-  }
+  // Timeframe toggle clicks
+  document.querySelectorAll('.timeframe-pill').forEach(pill => {
+    pill.onclick = () => {
+      document.querySelectorAll('.timeframe-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const newTimeframe = pill.dataset.timeframe;
 
-  if (eventContainer && periodToggle) {
-    const hours = Number(periodToggle.querySelector('.period-btn.active')?.dataset.hours || 24);
-    filterEventCards(eventContainer, hours, activeLabel);
-    updateLabelCounts(eventContainer, hours);
-    updateStockBadges(hours);
-  }
-}
-
-function initStock() {
-  const eventContainer = document.getElementById('stockEvents');
-  const periodToggle = document.querySelector('.period-toggle[data-scope="stock"]');
-  const countLabel = document.getElementById('eventCountLabel');
-
-  if (!eventContainer || !periodToggle) return;
-
-  const updateCountLabel = (hours) => {
-    if (!countLabel) return;
-    const key = hours === 24 ? 'count24' : hours === 168 ? 'count168' : 'count720';
-    const count = Number(countLabel.dataset[key] || 0);
-    countLabel.textContent = `${count}건 (${hours === 24 ? '24시간' : hours === 168 ? '7일' : '30일'})`;
-  };
-
-  periodToggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('.period-btn');
-    if (!btn) return;
-    periodToggle.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const hours = Number(btn.dataset.hours || 24);
-    filterEventCards(eventContainer, hours, 'all');
-    updateCountLabel(hours);
+      const currentRoute = parseRoute();
+      currentRoute.query.timeframe = newTimeframe;
+      const newUrl = window.location.pathname + '?' + new URLSearchParams(currentRoute.query).toString();
+      navigate(newUrl);
+    };
   });
 
-  const hours = Number(periodToggle.querySelector('.period-btn.active')?.dataset.hours || 24);
-  filterEventCards(eventContainer, hours, 'all');
-  updateCountLabel(hours);
-}
+  // Search input (placeholder for now)
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.oninput = (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const stocksToFilter = TOP50; // Or based on market filter
 
-function initYear() {
-  const year = document.getElementById('year');
-  if (year) year.textContent = String(new Date().getFullYear());
-}
-
-async function navigate(href, replace = false) {
-  const url = new URL(href, window.location.origin);
-  try {
-    const res = await fetch(url.pathname + url.search);
-    if (!res.ok) throw new Error('Failed to load');
-    const html = await res.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    const newApp = doc.getElementById('app');
-    const currentApp = document.getElementById('app');
-    if (newApp && currentApp) {
-      currentApp.innerHTML = newApp.innerHTML;
-    }
-
-    document.title = doc.title;
-    const metaNames = ['description', 'twitter:title', 'twitter:description', 'twitter:image'];
-    metaNames.forEach(name => {
-      const fresh = doc.querySelector(`meta[name="${name}"]`);
-      const current = document.querySelector(`meta[name="${name}"]`);
-      if (fresh && current) current.setAttribute('content', fresh.getAttribute('content') || '');
-    });
-    const metaProps = ['og:title', 'og:description', 'og:url', 'og:image', 'og:type'];
-    metaProps.forEach(prop => {
-      const fresh = doc.querySelector(`meta[property="${prop}"]`);
-      const current = document.querySelector(`meta[property="${prop}"]`);
-      if (fresh && current) current.setAttribute('content', fresh.getAttribute('content') || '');
-    });
-    const canonical = doc.querySelector('link[rel="canonical"]');
-    const currentCanonical = document.querySelector('link[rel="canonical"]');
-    if (canonical && currentCanonical) {
-      currentCanonical.setAttribute('href', canonical.getAttribute('href') || '');
-    }
-
-    const newJsonLd = doc.getElementById('jsonld');
-    const currentJsonLd = document.getElementById('jsonld');
-    if (newJsonLd) {
-      if (currentJsonLd) {
-        currentJsonLd.textContent = newJsonLd.textContent || '';
-      } else {
-        document.body.insertBefore(newJsonLd, document.querySelector('script[type="module"]'));
+      const filteredStocks = stocksToFilter.filter(s =>
+        s.ticker.toLowerCase().includes(searchTerm) ||
+        s.name_ko.toLowerCase().includes(searchTerm) ||
+        s.name_en.toLowerCase().includes(searchTerm)
+      );
+      
+      const stockGrid = document.getElementById('stockGrid');
+      if (stockGrid) {
+        stockGrid.innerHTML = renderStockGrid(filteredStocks, true, parseRoute().query.timeframe || '24h');
       }
-    } else if (currentJsonLd) {
-      currentJsonLd.remove();
-    }
-
-    if (replace) {
-      window.history.replaceState({}, '', url.pathname + url.search);
-    } else {
-      window.history.pushState({}, '', url.pathname + url.search);
-    }
-    window.scrollTo(0, 0);
-    setActiveNav(url.pathname);
-    initYear();
-    initHome();
-    initStock();
-  } catch {
-    window.location.href = href;
+    };
   }
 }
 
-function interceptLinks() {
-  document.addEventListener('click', (e) => {
-    const link = e.target.closest('a[href]');
-    if (!link) return;
-    const href = link.getAttribute('href');
-    if (!href) return;
-    if (
-      link.target === '_blank' ||
-      link.hasAttribute('download') ||
-      href.startsWith('http') ||
-      href.startsWith('//') ||
-      href.startsWith('#') ||
-      href.startsWith('mailto:') ||
-      e.ctrlKey || e.metaKey || e.shiftKey
-    ) {
-      return;
-    }
-    e.preventDefault();
-    navigate(href);
-  });
-}
+// ==================== Link Interception ====================
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a[href]');
+  if (!link) return;
 
-window.addEventListener('popstate', () => {
-  navigate(window.location.pathname + window.location.search, true);
+  const href = link.getAttribute('href');
+
+  // Skip external links, new tabs, special links
+  if (
+    link.target === '_blank' ||
+    link.hasAttribute('download') ||
+    href.startsWith('http') ||
+    href.startsWith('//') ||
+    href.startsWith('#') ||
+    href.startsWith('mailto:') ||
+    e.ctrlKey || e.metaKey || e.shiftKey
+  ) {
+    return;
+  }
+
+  e.preventDefault();
+  navigate(href);
 });
 
-setActiveNav(window.location.pathname);
-initYear();
-initHome();
-initStock();
-interceptLinks();
+// ==================== Init ====================
+window.addEventListener('popstate', renderClientSide);
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// Initial render or redirect
+if (window.location.pathname === '/' || window.location.pathname === '') {
+  navigate('/top50', true);
+} else {
+  renderClientSide();
+}
